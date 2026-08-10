@@ -310,7 +310,9 @@
 
   /* ── Tabellen ────────────────────────────────────────────── */
 
-  table { width: 100%; border-collapse: collapse; font-size: .9rem; border: 2px solid var(--line); }
+  /* Breite Tabellen scrollen in ihrem eigenen Container, statt die Seite zu sprengen */
+  .tablewrap { overflow-x: auto; }
+  table { width: 100%; min-width: 420px; border-collapse: collapse; font-size: .9rem; border: 2px solid var(--line); }
   th, td { text-align: left; padding: 13px 18px; border-bottom: 1px solid var(--rule); }
   th { font-size: .64rem; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--mute); border-bottom: 1.5px solid var(--line); }
   td.n { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -345,6 +347,7 @@
     .topbar .badge { display: none; }
     .cal-months { grid-template-columns: 1fr; }
     .next-rain { gap: 18px; }
+    th, td { padding: 10px 11px; font-size: .82rem; }
   }
 </style>
 </head>
@@ -405,10 +408,14 @@
       </div>
       <p class="sec-sub" id="calSub">
         Für jeden Tag die Tageshöchsttemperatur und die Regenwahrscheinlichkeit.
-        Bis Tag 16 ist das eine echte Wettervorhersage. Danach steht dort, was an
-        diesem Kalendertag statistisch zu erwarten ist — ermittelt aus allen Jahren
-        seit 1950 in einem Fenster von ±7 Tagen und um den Klimatrend korrigiert.
+        Bis Tag 16 ist das eine echte Wettervorhersage. Danach steht dort <b>kein
+        blanker Mittelwert</b>, sondern ein Best Guess: der Klimawert des Kalendertags,
+        verschoben um die aktuellen Tendenzen — Persistenz der letzten Wochen,
+        Saisonmodell und die Verläufe ähnlicher Jahre. Woraus sich das zusammensetzt,
+        steht direkt darunter; was es taugt, in Abschnitt 06.
       </p>
+
+      <div class="next-rain" id="guessPanel"></div>
 
       <div class="cal-controls">
         <button class="chip" id="cal6" aria-pressed="true" type="button">6 Monate</button>
@@ -431,9 +438,11 @@
         <div>
           <b>Die schraffierten Tage sind keine Vorhersage.</b> Ob es am 14. Oktober regnet,
           weiß heute niemand — das ist keine Frage besserer Modelle, sondern eine physikalische
-          Grenze bei etwa zwei Wochen. Was dort steht, ist die Häufigkeit aus 75 Jahren:
-          „an diesem Kalendertag war es in 41 % der Jahre nass“. Das ist eine belastbare
-          Aussage — nur eben eine andere als ein Wetterbericht.
+          Grenze bei etwa zwei Wochen. Der Best Guess verschiebt dort nur den <em>Erwartungswert</em>:
+          „an diesem Kalendertag war es in 41 % der Jahre nass, und die aktuelle Lage spricht
+          für etwas mehr“. Das ist eine belastbare Aussage — nur eben eine andere als ein
+          Wetterbericht. Wie groß die Verschiebung ausfällt, hängt davon ab, wie weit der Tag
+          entfernt ist: Persistenz klingt mit einer Halbwertszeit von rund 25 Tagen ab.
         </div>
       </div>
     </section>
@@ -541,15 +550,17 @@
     <section id="secVal">
       <div class="sec-head">
         <span class="num">06</span>
-        <div><h2>Wie verlässlich ist der Jahresvergleich?</h2></div>
+        <div><h2>Wie verlässlich ist der Best Guess?</h2></div>
       </div>
       <p class="sec-sub">
-        Nachgerechnet für jedes Jahr der Historie: Hätte man damals mit genau diesem Verfahren
-        die Folgemonate treffen können? Jede Vorhersage wird nur aus den <em>übrigen</em> Jahren
-        gebildet und gegen die simpelste denkbare Alternative verglichen — „es wird normal“.
+        Der Best Guess verschiebt den Erwartungswert — aber hilft das überhaupt? Hier tritt
+        jeder Baustein einzeln gegen die reine Klimatologie an, nachgerechnet für jedes Jahr
+        der Historie. Jede Vorhersage wird dabei nur aus den <em>übrigen</em> Jahren gebildet.
+        Skill ist der Vorsprung gegenüber „es wird normal“; negativ heißt schlechter als
+        nichts tun.
       </p>
 
-      <table id="valTable"></table>
+      <div class="tablewrap"><table id="valTable"></table></div>
       <div class="verdict" id="valVerdict"></div>
     </section>
 
@@ -590,6 +601,25 @@
           <p>Die Temperatur wird über eine Regression auf das aktuelle Jahr fortgeschrieben,
           damit die Erwartungswerte nicht auf dem Klima von 1985 hängenbleiben.
           Regenwahrscheinlichkeit ist der Anteil der Tage mit mindestens 1 mm Niederschlag.</p>
+        </div>
+
+        <div class="cell">
+          <h3>
+            <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20L10 8l4 6 6-10"/><path d="M4 20h16"/></svg>
+            Best Guess statt Mittelwert
+          </h3>
+          <p>Der Klimawert allein ist tendenzblind. Er wird deshalb um eine Anomalie
+          verschoben, die sich aus drei Quellen speist — gewichtet danach, wie weit der
+          Tag entfernt ist:</p>
+          <ul>
+            <li><b>Persistenz:</b> die mittlere Abweichung der letzten 30 Messtage, mit einer
+              Halbwertszeit von 25 Tagen abklingend</li>
+            <li><b>Saisonmodell:</b> die monatliche Ensemble-Anomalie aus Abschnitt 04</li>
+            <li><b>Ähnliche Jahre:</b> wie die fünf Analogjahre an genau diesem Kalendertag
+              verliefen, gewichtet nach Ähnlichkeit</li>
+          </ul>
+          <p>Die Gesamtverschiebung ist auf ±3 K gedeckelt. Beim Niederschlag fließt nur die
+          Analog-Komponente ein, weil das Saisonmodell dafür praktisch keinen Skill hat.</p>
         </div>
 
         <div class="cell">
@@ -727,7 +757,7 @@ function linreg(x, y) {
 }
 
 const fmtSigned = (v, d = 1) => (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(d).replace(".", ",");
-const fmtNum    = (v, d = 1) => v.toFixed(d).replace(".", ",");
+const fmtNum    = (v, d = 1) => v.toFixed(d).replace(".", ",").replace("-", "−");
 const pad2      = (n) => String(n).padStart(2, "0");
 const iso       = (d) => d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
 
@@ -840,7 +870,16 @@ function buildDoyClimatology(daily, targetYear) {
     b.p.push(p === null ? NaN : p);
   }
 
+  // Nachschlagetabelle Kalendertag → Jahr → Messwerte, für die Analog-Konditionierung
+  const byYear = buckets.map((b) => {
+    const m = new Map();
+    for (let j = 0; j < b.y.length; j++) m.set(b.y[j], { tx: b.tx[j], p: b.p[j] });
+    return m;
+  });
+
   const out = Array.from({ length: 365 }, () => null);
+  const regs = Array.from({ length: 365 }, () => null);
+
   for (let doy = 0; doy < 365; doy++) {
     const ys = [], txs = [], tns = [], ps = [];
     for (let k = -DOY_WIN; k <= DOY_WIN; k++) {
@@ -854,6 +893,7 @@ function buildDoyClimatology(daily, targetYear) {
     if (txs.length < 30) continue;
 
     const reg = linreg(ys, txs);
+    regs[doy] = reg;
     const sorted = [...txs].sort((a, b) => a - b);
     out[doy] = {
       n: txs.length,
@@ -866,7 +906,116 @@ function buildDoyClimatology(daily, targetYear) {
       trendPerDecade: reg.b * 10,
     };
   }
-  return out;
+  return { doy: out, regs, byYear };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Best Guess — Konditionierung auf die aktuellen Tendenzen
+
+   Der reine Klimawert ist der Mittelwert über alle Jahre und damit
+   bewusst tendenzblind. Hier wird er um eine Anomalie verschoben,
+   die sich aus drei Quellen speist. Ihr Gewicht hängt davon ab, wie
+   weit der Tag entfernt ist — jede Quelle hat einen anderen Horizont,
+   auf dem sie überhaupt etwas weiß.
+   ═══════════════════════════════════════════════════════════════ */
+
+const PERS_TAU = 25;      // Halbwertszeit der Persistenz in Tagen
+const MAX_OFFSET = 3.0;   // Deckel für die Gesamtanomalie in Kelvin
+
+/** Mittlere Temperaturabweichung der letzten `days` Messtage vom Trendwert. */
+function recentAnomaly(daily, doyData, days) {
+  const time = daily.time, tmax = daily.temperature_2m_max;
+  const anoms = [];
+  for (let i = time.length - 1; i >= 0 && anoms.length < days; i--) {
+    const tx = tmax[i];
+    if (tx === null || tx === undefined) continue;
+    const y = +time[i].slice(0, 4), m = +time[i].slice(5, 7) - 1, d = +time[i].slice(8, 10);
+    const reg = doyData.regs[doyOf(y, m, d)];
+    if (!reg) continue;
+    anoms.push(tx - (reg.a + reg.b * y));
+  }
+  return anoms.length ? { value: mean(anoms), n: anoms.length } : { value: 0, n: 0 };
+}
+
+/**
+ * Wie sind die Analogjahre an einem Kalendertag verlaufen — verglichen mit
+ * dem, was in ihrem jeweiligen Jahr normal gewesen wäre? Liefert eine
+ * Temperaturabweichung und eine Verschiebung der Regenhäufigkeit.
+ */
+function analogOffsets(doyData, analogs) {
+  const use = analogs.filter((a) => a.year);
+  const offT = new Array(365).fill(0), offR = new Array(365).fill(0);
+  if (!use.length) return { offT, offR, years: [] };
+
+  const wts = use.map((a) => 1 / (a.dist + 0.15));
+  const wSum = sum(wts);
+
+  for (let doy = 0; doy < 365; doy++) {
+    let tAcc = 0, tW = 0, wetAcc = 0, wetW = 0;
+    for (let k = -DOY_WIN; k <= DOY_WIN; k++) {
+      const idx = (doy + k + 365) % 365;
+      const reg = doyData.regs[idx];
+      const map = doyData.byYear[idx];
+      if (!reg || !map) continue;
+      use.forEach((a, ai) => {
+        const rec = map.get(a.year);
+        if (!rec) return;
+        tAcc += wts[ai] * (rec.tx - (reg.a + reg.b * a.year)); tW += wts[ai];
+        if (!Number.isNaN(rec.p)) { wetAcc += wts[ai] * (rec.p >= WET_MM ? 1 : 0); wetW += wts[ai]; }
+      });
+    }
+    offT[doy] = tW > 0 ? tAcc / tW : 0;
+    const climProb = doyData.doy[doy] ? doyData.doy[doy].rainProb : NaN;
+    offR[doy] = (wetW > 0 && !Number.isNaN(climProb)) ? (wetAcc / wetW) - climProb : 0;
+  }
+  return { offT, offR, years: use.map((a) => a.year), weightSum: wSum };
+}
+
+/** Monatliche Temperaturanomalie aus dem Saison-Ensemble, Schlüssel "YYYY-M". */
+function seasonalOffsets(fcMonths, clim) {
+  const map = new Map();
+  if (!fcMonths) return map;
+  for (const f of fcMonths) {
+    const norm = clim.normT[f.month];
+    if (Number.isNaN(norm) || !f.temps.length) continue;
+    const med = quantile([...f.temps].sort((a, b) => a - b), 0.5);
+    map.set(f.year + "-" + f.month, med - norm);
+  }
+  return map;
+}
+
+/**
+ * Setzt die Bausteine zu einer Anomalie pro Tag zusammen.
+ * Persistenz dominiert kurzfristig und klingt ab; danach übernehmen
+ * Saisonmodell und Analogjahre. Ohne verfügbare Quelle bleibt der
+ * reine Klimawert stehen — dann ist der Best Guess eben die Klimatologie.
+ */
+function makeBestGuess(recent, analog, seasonal) {
+  return function (date, leadDays) {
+    const doy = doyOf(date.getFullYear(), date.getMonth(), date.getDate());
+    const wPers = Math.exp(-leadDays / PERS_TAU);
+    const rest = 1 - wPers;
+
+    const aSeas = seasonal.get(date.getFullYear() + "-" + date.getMonth());
+    const hasSeas = aSeas !== undefined;
+    const hasAna = analog.years.length > 0;
+
+    let wSeas = 0, wAna = 0;
+    if (hasSeas && hasAna) { wSeas = rest * 0.65; wAna = rest * 0.35; }
+    else if (hasSeas)      { wSeas = rest; }
+    else if (hasAna)       { wAna = rest; }
+
+    let dT = wPers * recent.value
+           + wSeas * (hasSeas ? aSeas : 0)
+           + wAna  * analog.offT[doy];
+    dT = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, dT));
+
+    // Regen: das Saisonmodell hat dafür praktisch keinen Skill, deshalb
+    // fließt hier nur die Analog-Komponente ein — gedämpft.
+    const dR = hasAna ? wAna * analog.offR[doy] : 0;
+
+    return { dT, dR, wPers, wSeas, wAna };
+  };
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -986,21 +1135,43 @@ function findAnalogs(z, anomDet, anchor, k, requireTarget) {
   return out.slice(0, k);
 }
 
-function validate(z, anomDet, anchorMonth) {
-  const preds = [], obs = [];
+/**
+ * Vergleicht die Bausteine des Best Guess gegeneinander — jeder streng
+ * out-of-sample. Die Dämpfung der Persistenz wird dabei nicht geraten,
+ * sondern für jeden Fall aus den übrigen Jahren geschätzt.
+ */
+function validatePredictors(z, anomDet, anchorMonth) {
+  const cases = [];
   for (let i = anchorMonth; i < z.length; i += 12) {
     const actual = target(anomDet, i);
-    if (actual === null || !window6(z, i)) continue;
+    if (actual === null || anomDet[i] === null || !window6(z, i)) continue;
     const an = findAnalogs(z, anomDet, i, K_ANALOGS, true);
     if (an.length < K_ANALOGS) continue;
-    preds.push(mean(an.map((a) => a.target)));
-    obs.push(actual);
+    cases.push({ pers: anomDet[i], ana: mean(an.map((a) => a.target)), obs: actual });
   }
-  if (preds.length < 15) return { n: preds.length, ok: false };
-  const maeA = mean(preds.map((p, i) => Math.abs(p - obs[i])));
-  const maeC = mean(obs.map((o) => Math.abs(o)));
-  return { ok: true, n: preds.length, r: pearson(preds, obs),
-           maeAnalog: maeA, maeClim: maeC, skill: maeC === 0 ? 0 : 1 - maeA / maeC };
+  if (cases.length < 15) return { ok: false, n: cases.length };
+
+  const preds = { pers: [], ana: [], combo: [] }, obs = [];
+  let dampSum = 0;
+  cases.forEach((c, i) => {
+    const others = cases.filter((_, j) => j !== i);
+    const reg = linreg(others.map((o) => o.pers), others.map((o) => o.obs));
+    const p = reg.a + reg.b * c.pers;
+    dampSum += reg.b;
+    preds.pers.push(p);
+    preds.ana.push(c.ana);
+    preds.combo.push((p + c.ana) / 2);
+    obs.push(c.obs);
+  });
+
+  const maeClim = mean(obs.map((o) => Math.abs(o)));
+  const res = { ok: true, n: cases.length, maeClim, damping: dampSum / cases.length };
+  for (const k of ["pers", "ana", "combo"]) {
+    const mae = mean(preds[k].map((p, i) => Math.abs(p - obs[i])));
+    res[k] = { mae, r: pearson(preds[k], obs), skill: maeClim === 0 ? 0 : 1 - mae / maeClim };
+  }
+  res.best = ["pers", "ana", "combo"].reduce((a, b) => (res[a].skill >= res[b].skill ? a : b));
+  return res;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1075,7 +1246,7 @@ function aggregateSeasonal(seasonal) {
  * Tage innerhalb der Vorhersagereichweite bekommen echte Werte
  * (source: "fc"), alle übrigen den Erwartungswert (source: "clim").
  */
-function buildDaySeries(doyClim, forecast, months) {
+function buildDaySeries(doyData, forecast, months, guess) {
   const fcMap = new Map();
   if (forecast && forecast.daily) {
     const f = forecast.daily;
@@ -1096,16 +1267,18 @@ function buildDaySeries(doyClim, forecast, months) {
   const days = [];
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     const key = iso(d);
-    const clim = doyClim[doyOf(d.getFullYear(), d.getMonth(), d.getDate())];
+    const clim = doyData.doy[doyOf(d.getFullYear(), d.getMonth(), d.getDate())];
     const fc = fcMap.get(key);
     const past = d < today;
+    const lead = Math.round((d - today) / 86400000);
 
     let rec = {
-      date: new Date(d), key, past,
+      date: new Date(d), key, past, lead,
       isToday: d.getTime() === today.getTime(),
       clim,
       source: fc ? "fc" : "clim",
       tmax: null, rainProb: null, prec: null, wet: false,
+      climTmax: clim ? clim.tmax : null, adj: null,
     };
 
     if (fc && fc.tmax !== null && fc.tmax !== undefined) {
@@ -1117,10 +1290,14 @@ function buildDaySeries(doyClim, forecast, months) {
       rec.wet = (fc.prec !== null && fc.prec >= WET_MM);
     } else if (clim) {
       rec.source = "clim";
-      rec.tmax = clim.tmax;
-      rec.rainProb = clim.rainProb;
+      // Best Guess: Klimawert plus die auf die aktuellen Tendenzen
+      // konditionierte Anomalie
+      const g = guess ? guess(new Date(d), lead) : { dT: 0, dR: 0 };
+      rec.adj = g;
+      rec.tmax = clim.tmax + g.dT;
+      rec.rainProb = Math.max(0.02, Math.min(0.98, clim.rainProb + g.dR));
       rec.prec = clim.precMean;
-      rec.wet = clim.rainProb >= 0.5;
+      rec.wet = rec.rainProb >= 0.5;
     }
     days.push(rec);
   }
@@ -1431,6 +1608,12 @@ function renderAnalogs(analogs, anchor) {
   }
 }
 
+const PRED_LABEL = {
+  pers: "Persistenz der letzten Wochen",
+  ana:  "Ähnliche Jahre der Historie",
+  combo: "Kombination beider",
+};
+
 function renderValidation(v, anchor) {
   const lf = MON[idxMon(anchor + 1)], lt = MON[idxMon(anchor + LEAD_LEN)];
 
@@ -1441,38 +1624,73 @@ function renderValidation(v, anchor) {
     return;
   }
 
-  $("valTable").innerHTML =
-    "<tr><th>Kennzahl</th><th style='text-align:right'>Wert</th></tr>"
-    + "<tr><td>Getestete Jahre</td><td class='n'>" + v.n + "</td></tr>"
-    + "<tr><td>Korrelation Vorhersage ↔ Realität</td><td class='n'>"
-      + (Number.isNaN(v.r) ? "—" : fmtNum(v.r, 2)) + "</td></tr>"
-    + "<tr><td>Mittlerer Fehler Analogverfahren</td><td class='n'>" + fmtNum(v.maeAnalog, 2) + " K</td></tr>"
-    + "<tr><td>Mittlerer Fehler „es wird normal“</td><td class='n'>" + fmtNum(v.maeClim, 2) + " K</td></tr>"
-    + "<tr class='accent'><td><b>Skill-Score gegenüber dieser Baseline</b></td><td class='n'>"
-      + fmtSigned(v.skill * 100, 0) + " %</td></tr>";
+  let rows =
+    "<tr><th>Verfahren</th><th style='text-align:right'>Mittlerer Fehler</th>"
+    + "<th style='text-align:right'>Korrelation</th><th style='text-align:right'>Skill</th></tr>"
+    + "<tr><td>Klimatologie („es wird normal“)</td><td class='n'>"
+      + fmtNum(v.maeClim, 2) + " K</td><td class='n'>—</td><td class='n'>0 %</td></tr>";
 
-  let txt;
-  if (v.skill > 0.10) {
-    txt = "<p><b>Das Verfahren schlägt die Baseline.</b> Für " + lf + "–" + lt
-        + " an diesem Ort ist der Jahresvergleich im Mittel um " + fmtNum(v.skill * 100, 0)
-        + " % genauer als die Annahme „es wird normal“. Das ist ein reales, aber kleines "
-        + "Signal — kein Grund, dem Ausblick Tagesgenauigkeit zuzutrauen.</p>";
-  } else if (v.skill > 0.02) {
-    txt = "<p><b>Grenzwertig.</b> Der Vorsprung vor der Baseline liegt bei nur "
-        + fmtNum(v.skill * 100, 0) + " % und ist bei " + v.n + " getesteten Jahren statistisch "
-        + "kaum von Zufall zu unterscheiden. Als Vorhersage würde ich mich darauf nicht stützen.</p>";
-  } else {
-    txt = "<p><b>Kein nachweisbarer Vorteil.</b> Der Jahresvergleich trifft " + lf + "–" + lt
-        + " an diesem Ort nicht besser als die Annahme „es wird normal“"
-        + (v.skill < 0 ? " — sondern schlechter" : "") + ".</p>"
-        + "<p>Genau dafür ist dieser Abschnitt da. Das Verfahren aus Abschnitt 05 sieht "
-        + "überzeugend aus, hält aber nicht, was die Optik verspricht. Die Analogjahre taugen "
-        + "als Illustration der Bandbreite — nicht als Prognose.</p>";
+  for (const k of ["pers", "ana", "combo"]) {
+    rows += "<tr" + (k === v.best ? " class='accent'" : "") + "><td>"
+      + (k === v.best ? "<b>" + PRED_LABEL[k] + "</b>" : PRED_LABEL[k]) + "</td>"
+      + "<td class='n'>" + fmtNum(v[k].mae, 2) + " K</td>"
+      + "<td class='n'>" + (Number.isNaN(v[k].r) ? "—" : fmtNum(v[k].r, 2)) + "</td>"
+      + "<td class='n'>" + fmtSigned(v[k].skill * 100, 0) + " %</td></tr>";
   }
+  $("valTable").innerHTML = rows;
+
+  const bestSkill = v[v.best].skill;
+  let txt;
+  if (bestSkill > 0.10) {
+    txt = "<p><b>Die Konditionierung zahlt sich aus.</b> " + PRED_LABEL[v.best]
+        + " trifft " + lf + "–" + lt + " an diesem Ort im Mittel um "
+        + fmtNum(bestSkill * 100, 0) + " % genauer als die reine Klimatologie. "
+        + "Das ist ein reales, aber kleines Signal — es rechtfertigt eine Verschiebung "
+        + "des Erwartungswerts, keine Tagesgenauigkeit.</p>";
+  } else if (bestSkill > 0.02) {
+    txt = "<p><b>Grenzwertig.</b> Der beste Baustein (" + PRED_LABEL[v.best].toLowerCase()
+        + ") liegt nur " + fmtNum(bestSkill * 100, 0) + " % vor der Klimatologie. "
+        + "Bei " + v.n + " getesteten Jahren ist das statistisch kaum von Zufall zu "
+        + "unterscheiden — die Verschiebung im Kalender ist entsprechend klein gehalten.</p>";
+  } else {
+    txt = "<p><b>Kein nachweisbarer Vorteil.</b> Für " + lf + "–" + lt
+        + " an diesem Ort schlägt keiner der Bausteine die reine Klimatologie.</p>"
+        + "<p>Das ist kein Fehler der Seite, sondern das Ergebnis. Der Best Guess "
+        + "verschiebt den Erwartungswert hier also auf dünner Grundlage — wie dünn, "
+        + "steht in der Tabelle darüber, statt hinter einer schönen Zahl zu verschwinden.</p>";
+  }
+  txt += "<p>Die Dämpfung der Persistenz wird nicht geraten: Sie ergibt sich für jeden "
+       + "Testfall aus einer Regression über die <em>übrigen</em> Jahre und liegt hier "
+       + "im Mittel bei " + fmtNum(v.damping, 2) + ". Ein Wert nahe null hieße, dass die "
+       + "jüngste Abweichung nichts über die Folgemonate verrät.</p>";
+
   $("valVerdict").innerHTML =
     '<svg class="icon lg" viewBox="0 0 24 24" aria-hidden="true">'
     + '<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>'
     + '<div class="txt">' + txt + "</div>";
+}
+
+/** Legt offen, woraus die Verschiebung gegenüber der reinen Klimatologie besteht. */
+function renderGuessPanel(recent, analog, seasonalMap, days) {
+  const ahead = days.filter((d) => d.source === "clim" && !d.past && d.adj);
+  const next30 = ahead.slice(0, 30);
+  const avgShift = next30.length ? mean(next30.map((d) => d.adj.dT)) : 0;
+  const later = ahead.slice(60, 120);
+  const lateShift = later.length ? mean(later.map((d) => d.adj.dT)) : 0;
+
+  const seasVals = [...seasonalMap.values()];
+  const seasTxt = seasVals.length ? fmtSigned(seasVals[0]) + " K" : "nicht verfügbar";
+
+  $("guessPanel").innerHTML =
+    '<div class="col"><span class="lbl">Verschiebung, nächste 30 Tage</span>'
+    + '<div class="big">' + fmtSigned(avgShift) + " K</div></div>"
+    + '<div class="col"><span class="lbl">Ab Monat 3</span><div class="v">'
+      + fmtSigned(lateShift) + " K</div></div>"
+    + '<div class="col"><span class="lbl">Letzte ' + recent.n + ' Tage</span><div class="v">'
+      + fmtSigned(recent.value) + " K</div></div>"
+    + '<div class="col"><span class="lbl">Saisonmodell</span><div class="v">' + seasTxt + "</div></div>"
+    + '<div class="col"><span class="lbl">Ähnliche Jahre</span><div class="v">'
+      + (analog.years.length ? analog.years.join(", ") : "—") + "</div></div>";
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1503,51 +1721,59 @@ async function run(place) {
 
   try {
     setLoading("Lade Messhistorie seit " + HIST_START + " — rund 28 000 Tageswerte …");
-    const [hist, fc] = await Promise.all([
+    const [hist, fc, seasonal] = await Promise.all([
       fetchHistory(place.lat, place.lon),
       fetchForecast(place.lat, place.lon).catch((e) => {
         showError("16-Tage-Vorhersage nicht verfügbar — der Kalender zeigt "
                 + "durchgehend Erwartungswerte.", e.message);
         return null;
       }),
+      fetchSeasonal(place.lat, place.lon).catch((e) => {
+        showError("Saisonprognose nicht verfügbar — der Best Guess stützt sich dann nur "
+                + "auf Persistenz und ähnliche Jahre.", e.message);
+        return null;
+      }),
     ]);
 
     setLoading("Berechne Tagesklimatologie aus 75 Jahren …");
     const year = new Date().getFullYear();
-    const doyClim = buildDoyClimatology(hist.daily, year);
+    const doyData = buildDoyClimatology(hist.daily, year);
     const monthly = aggregateMonthly(hist.daily);
     const clim = buildClimatology(monthly);
-
-    STATE.days = buildDaySeries(doyClim, fc, 13);
-    $("out").hidden = false;
-
-    renderCalendar(STATE.days, STATE.calMonths);
-    renderNextRain(STATE.days, !!fc);
-    renderWeeks(STATE.days);
-    renderRainStats(STATE.days, doyClim);
-    renderNow(monthly, clim);
 
     let anchor = monthly.nMonths - 1;
     while (anchor > 0 && (monthly.t[anchor] === null
            || monthly.days[anchor] < monthly.expected[anchor] - 1)) anchor--;
 
-    setLoading("Suche vergleichbare Jahre und validiere das Verfahren …");
-    renderAnalogs(findAnalogs(clim.z, clim.anomDet, anchor, K_ANALOGS, true), anchor);
-    renderValidation(validate(clim.z, clim.anomDet, idxMon(anchor)), anchor);
+    setLoading("Werte die aktuellen Tendenzen aus …");
+    const analogs = findAnalogs(clim.z, clim.anomDet, anchor, K_ANALOGS, true);
+    const now = new Date();
+    const fcMonths = seasonal
+      ? aggregateSeasonal(seasonal).filter((m) =>
+          m.year > now.getFullYear() || (m.year === now.getFullYear() && m.month >= now.getMonth()))
+      : [];
 
-    setLoading("Lade Saisonprognose …");
-    try {
-      const seasonal = await fetchSeasonal(place.lat, place.lon);
-      const now = new Date();
-      const months = aggregateSeasonal(seasonal).filter((m) =>
-        m.year > now.getFullYear() || (m.year === now.getFullYear() && m.month >= now.getMonth()));
-      if (months.length) renderForecast(months, clim);
-      else { $("secFc").hidden = true; showError("Saisonprognose übersprungen",
-              "Die Antwort enthielt keine vollständigen Zukunftsmonate."); }
-    } catch (e) {
-      $("secFc").hidden = true;
-      showError("Saisonprognose nicht verfügbar — der Rest der Seite ist davon unberührt.", e.message);
-    }
+    const recent = recentAnomaly(hist.daily, doyData, 30);
+    const analogOff = analogOffsets(doyData, analogs);
+    const seasonalMap = seasonalOffsets(fcMonths, clim);
+    const guess = makeBestGuess(recent, analogOff, seasonalMap);
+
+    STATE.days = buildDaySeries(doyData, fc, 13, guess);
+    $("out").hidden = false;
+
+    renderGuessPanel(recent, analogOff, seasonalMap, STATE.days);
+    renderCalendar(STATE.days, STATE.calMonths);
+    renderNextRain(STATE.days, !!fc);
+    renderWeeks(STATE.days);
+    renderRainStats(STATE.days, doyData);
+    renderNow(monthly, clim);
+
+    setLoading("Validiere die Bausteine gegen die Klimatologie …");
+    renderAnalogs(analogs, anchor);
+    renderValidation(validatePredictors(clim.z, clim.anomDet, idxMon(anchor)), anchor);
+
+    if (fcMonths.length) renderForecast(fcMonths, clim);
+    else $("secFc").hidden = true;
 
     clearLoading();
     $("srcBadgeText").textContent = "Live-Daten · " + place.name;
