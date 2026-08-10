@@ -3,26 +3,32 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Saisonausblick — ehrlicher Langfristausblick</title>
-<meta name="description" content="Saisonprognose-Modelldaten, eingeordnet in die Klimatologie des Orts, verglichen mit ähnlichen Jahren der Vergangenheit — und ehrlich nachgemessen, was das Verfahren wirklich taugt.">
+<title>Saisonausblick — Tageskalender, Regenverlauf und ehrlicher Langfristausblick</title>
+<meta name="description" content="Tageskalender aus echter 16-Tage-Vorhersage und 75 Jahren Klimatologie, Regenverlauf übers Jahr, Saisonprognose — mit offengelegtem Skill statt vorgetäuschter Genauigkeit.">
 <style>
   /* ═══════════════════════════════════════════════════════════
      Design-Guideline: plain black & white, flat.
      Keine Farben, keine Schatten, keine Verläufe, keine Radien.
      Hierarchie entsteht ausschließlich über Linienstärke,
      Flächenkontrast, Typo-Gewicht und Weißraum.
-     Warm = gefüllte Fläche · Kalt = Schraffur · Neutral = Kontur
+
+     Sicherheitskodierung — durchgängig auf der ganzen Seite:
+       gefüllte Fläche = gemessen oder echte Vorhersage
+       Schraffur       = statistischer Erwartungswert
+       reine Kontur    = kein Wert vorhanden
      ═══════════════════════════════════════════════════════════ */
 
   :root {
     --paper: #ffffff;
     --ink:   #000000;
-    --mute:  #767676;
+    --mute:  #6f6f6f;
     --line:  #000000;
     --rule:  #d8d8d8;
     --fill-soft: #f2f2f2;
     --hatch: repeating-linear-gradient(
                45deg, var(--ink) 0 1.5px, transparent 1.5px 5px);
+    --hatch-fine: repeating-linear-gradient(
+               45deg, var(--ink) 0 1px, transparent 1px 3.5px);
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -80,7 +86,7 @@
     display: flex; align-items: center; gap: 7px;
   }
 
-  header.hero { padding: 64px 0 52px; border-bottom: 1px solid var(--rule); }
+  header.hero { padding: 60px 0 48px; border-bottom: 1px solid var(--rule); }
   h1 {
     font-size: clamp(2rem, 6vw, 3.4rem); line-height: 1.04;
     letter-spacing: -.035em; font-weight: 800; margin: 0 0 22px; max-width: 17ch;
@@ -90,10 +96,7 @@
     max-width: 56ch; margin: 0 0 34px;
   }
 
-  .place {
-    display: flex; align-items: stretch; border: 2px solid var(--line);
-    max-width: 460px;
-  }
+  .place { display: flex; align-items: stretch; border: 2px solid var(--line); max-width: 460px; }
   .place .pin { display: grid; place-items: center; padding: 0 14px; border-right: 2px solid var(--line); }
   .place input {
     flex: 1 1 auto; min-width: 0; border: none; outline: none; background: transparent;
@@ -107,10 +110,26 @@
     letter-spacing: .13em; text-transform: uppercase; padding: 0 22px;
   }
   .place button:hover { background: var(--paper); color: var(--ink); }
-  .coords {
-    margin: 14px 0 0; font-size: .8rem; color: var(--mute);
-    font-variant-numeric: tabular-nums;
+  .place button[disabled] { cursor: progress; opacity: .5; }
+  .coords { margin: 14px 0 0; font-size: .8rem; color: var(--mute); font-variant-numeric: tabular-nums; }
+
+  /* ── Ladezustand / Fehler ────────────────────────────────── */
+
+  .loading {
+    border: 2px solid var(--line); padding: 16px 20px; margin: 26px 0;
+    display: flex; align-items: center; gap: 14px; font-size: .9rem;
   }
+  .loading .pulse {
+    width: 14px; height: 14px; flex: 0 0 auto; background: var(--ink);
+    animation: blink 1s steps(2, start) infinite;
+  }
+  @keyframes blink { 50% { opacity: .15; } }
+  .errbox {
+    border: 2px solid var(--line); padding: 16px 20px; margin: 18px 0;
+    font-size: .88rem; background: var(--fill-soft);
+  }
+  .errbox b { display: block; margin-bottom: 5px; }
+  .errbox code { font-size: .85em; color: var(--mute); word-break: break-word; }
 
   /* ── Abschnitte ──────────────────────────────────────────── */
 
@@ -142,8 +161,7 @@
   .rows { padding: 6px 16px 14px; }
   .row {
     display: grid; grid-template-columns: 104px 1fr 82px;
-    gap: 14px; align-items: center; padding: 5px 0;
-    font-size: .86rem;
+    gap: 14px; align-items: center; padding: 5px 0; font-size: .86rem;
   }
   .row .lbl { color: var(--mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .row .num { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -153,10 +171,7 @@
     content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px;
     width: 1px; background: var(--ink);
   }
-  .track .b {
-    position: absolute; top: 3px; bottom: 3px;
-    border: 1.5px solid var(--ink);
-  }
+  .track .b { position: absolute; top: 3px; bottom: 3px; border: 1.5px solid var(--ink); }
   .track .b.warm { background: var(--ink); }
   .track .b.cold { background-image: var(--hatch); }
 
@@ -165,39 +180,104 @@
     padding: 0 16px 12px; font-size: .68rem; color: var(--mute);
     font-variant-numeric: tabular-nums;
   }
-  .axis span:nth-child(2) { transform: translateX(-14px); }
 
-  .key {
-    display: flex; flex-wrap: wrap; gap: 22px; margin-top: 16px;
-    font-size: .76rem; color: var(--mute);
-  }
+  .key { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 16px; font-size: .76rem; color: var(--mute); }
   .key i { display: inline-block; width: 22px; height: 12px; border: 1.5px solid var(--ink); margin-right: 8px; vertical-align: -2px; }
   .key i.warm { background: var(--ink); }
   .key i.cold { background-image: var(--hatch); }
+  .key i.clim { background-image: var(--hatch-fine); }
   .key i.span { border: none; border-top: 1.5px solid var(--ink); height: 1px; margin-bottom: 5px; }
+
+  /* ── Tageskalender ───────────────────────────────────────── */
+
+  .cal-controls { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 22px; }
+  .chip {
+    border: 1.5px solid var(--line); background: transparent; color: var(--ink);
+    font: inherit; font-size: .7rem; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; padding: 7px 14px; cursor: pointer;
+  }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+
+  .cal-months { display: grid; gap: 22px; grid-template-columns: repeat(auto-fill, minmax(298px, 1fr)); }
+  .cal-m { border: 2px solid var(--line); }
+  .cal-m .cap {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
+    padding: 11px 14px; border-bottom: 1.5px solid var(--line);
+  }
+  .cal-m .cap .t { font-size: .78rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+  .cal-m .cap .s { font-size: .68rem; color: var(--mute); font-variant-numeric: tabular-nums; }
+  .dow {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    border-bottom: 1px solid var(--rule);
+  }
+  .dow span {
+    text-align: center; padding: 6px 0; font-size: .6rem; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; color: var(--mute);
+  }
+  .days { display: grid; grid-template-columns: repeat(7, 1fr); }
+  .day {
+    position: relative; min-height: 54px; padding: 4px 4px 9px;
+    border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+  }
+  .day:nth-child(7n) { border-right: none; }
+  .day.pad { background: var(--fill-soft); }
+  .day .dnum {
+    font-size: .58rem; color: var(--mute); align-self: flex-start;
+    line-height: 1; font-variant-numeric: tabular-nums;
+  }
+  .day .temp {
+    font-size: .84rem; font-weight: 700; line-height: 1.15; margin-top: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+  .day.clim .temp { font-weight: 600; color: var(--mute); }
+  .day .rain {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 6px;
+    border-top: 1px solid var(--rule);
+  }
+  .day .rain b { position: absolute; left: 0; bottom: 0; top: 0; display: block; background: var(--ink); }
+  .day.clim .rain b { background: transparent; background-image: var(--hatch-fine); }
+  .day.today { outline: 2px solid var(--ink); outline-offset: -2px; }
+  .day.today .dnum { color: var(--ink); font-weight: 700; }
+  .day .wet { position: absolute; top: 3px; right: 4px; width: 5px; height: 5px; background: var(--ink); }
+
+  .seam {
+    display: flex; gap: 13px; align-items: flex-start;
+    border: 1.5px solid var(--line); padding: 15px 18px; margin: 22px 0 0;
+    font-size: .87rem; background: var(--fill-soft);
+  }
+
+  /* ── Regenverlauf ────────────────────────────────────────── */
+
+  .next-rain {
+    border: 2px solid var(--line); padding: 20px 22px; margin-bottom: 24px;
+    display: flex; flex-wrap: wrap; gap: 22px; align-items: baseline;
+  }
+  .next-rain .big { font-size: 2rem; font-weight: 800; letter-spacing: -.03em; line-height: 1; }
+  .next-rain .lbl { font-size: .64rem; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--mute); display: block; margin-bottom: 7px; }
+  .next-rain .col { min-width: 120px; }
+  .next-rain .col .v { font-size: 1.05rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  .weeks { border: 2px solid var(--line); padding: 18px 16px 12px; }
+  .weekbars { display: flex; align-items: flex-end; gap: 2px; height: 116px; }
+  .wk { flex: 1 1 0; position: relative; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; }
+  .wk b { display: block; width: 100%; background: var(--ink); }
+  .wk.clim b { background: transparent; background-image: var(--hatch-fine); border-top: 1.5px solid var(--ink); }
+  .wk-axis {
+    display: flex; margin-top: 8px; border-top: 1px solid var(--rule); padding-top: 7px;
+    font-size: .6rem; color: var(--mute); letter-spacing: .06em; text-transform: uppercase;
+  }
+  .wk-axis span { flex: 1 1 0; text-align: left; }
+  .wk-scale { display: flex; justify-content: space-between; font-size: .64rem; color: var(--mute); margin-bottom: 6px; }
 
   /* ── Prognosekarten ──────────────────────────────────────── */
 
   .months { display: grid; gap: 0; grid-template-columns: repeat(auto-fill, minmax(212px, 1fr)); border: 2px solid var(--line); }
-  .m {
-    padding: 18px; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
-  }
-  .m .mon {
-    font-size: .68rem; font-weight: 700; letter-spacing: .13em;
-    text-transform: uppercase; color: var(--mute); margin-bottom: 10px;
-  }
-  .m .val {
-    font-size: 2.1rem; font-weight: 800; letter-spacing: -.045em;
-    line-height: 1; font-variant-numeric: tabular-nums;
-  }
-  .m .unit {
-    font-size: .62rem; font-weight: 700; letter-spacing: .12em;
-    text-transform: uppercase; color: var(--mute); margin-top: 6px; white-space: nowrap;
-  }
-  .m .spread {
-    margin-top: 14px; position: relative; height: 22px;
-    border-top: 1px solid var(--rule);
-  }
+  .m { padding: 18px; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+  .m .mon { font-size: .68rem; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--mute); margin-bottom: 10px; }
+  .m .val { font-size: 2.1rem; font-weight: 800; letter-spacing: -.045em; line-height: 1; font-variant-numeric: tabular-nums; }
+  .m .unit { font-size: .62rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--mute); margin-top: 6px; white-space: nowrap; }
+  .m .spread { margin-top: 14px; position: relative; height: 22px; border-top: 1px solid var(--rule); }
   .m .spread .line { position: absolute; top: 10px; height: 1.5px; background: var(--ink); }
   .m .spread .cap { position: absolute; top: 5px; width: 1.5px; height: 11px; background: var(--ink); }
   .m .spread .med { position: absolute; top: 2px; width: 3px; height: 17px; background: var(--ink); }
@@ -216,11 +296,7 @@
   /* ── Analogjahre ─────────────────────────────────────────── */
 
   .analogs { border: 2px solid var(--line); }
-  .an {
-    display: grid; grid-template-columns: 96px 1fr 128px;
-    align-items: center; gap: 18px; padding: 15px 18px;
-    border-bottom: 1px solid var(--rule);
-  }
+  .an { display: grid; grid-template-columns: 96px 1fr 128px; align-items: center; gap: 18px; padding: 15px 18px; border-bottom: 1px solid var(--rule); }
   .an:last-child { border-bottom: none; }
   .an .yr { font-size: 1.45rem; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
   .an .d { font-size: .68rem; color: var(--mute); letter-spacing: .06em; font-variant-numeric: tabular-nums; }
@@ -232,28 +308,17 @@
   .an .mini .b.warm { background: var(--ink); }
   .an .mini .b.cold { background-image: var(--hatch); }
 
-  /* ── Validierung ─────────────────────────────────────────── */
+  /* ── Tabellen ────────────────────────────────────────────── */
 
-  table {
-    width: 100%; border-collapse: collapse; font-size: .9rem;
-    border: 2px solid var(--line);
-  }
+  table { width: 100%; border-collapse: collapse; font-size: .9rem; border: 2px solid var(--line); }
   th, td { text-align: left; padding: 13px 18px; border-bottom: 1px solid var(--rule); }
-  th {
-    font-size: .64rem; font-weight: 700; letter-spacing: .13em;
-    text-transform: uppercase; color: var(--mute);
-    border-bottom: 1.5px solid var(--line);
-  }
+  th { font-size: .64rem; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--mute); border-bottom: 1.5px solid var(--line); }
   td.n { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
   tr:last-child td { border-bottom: none; }
   tr.accent td { background: var(--fill-soft); }
 
-  .verdict {
-    border: 2px solid var(--line); border-top: none;
-    padding: 20px; display: flex; gap: 15px; align-items: flex-start;
-  }
+  .verdict { border: 2px solid var(--line); border-top: none; padding: 20px; display: flex; gap: 15px; align-items: flex-start; }
   .verdict .txt { font-size: .93rem; }
-  .verdict .txt b { font-weight: 700; }
   .verdict .txt p { margin: 0 0 9px; }
   .verdict .txt p:last-child { margin: 0; }
 
@@ -261,27 +326,25 @@
 
   .grid2 { display: grid; gap: 0; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); border: 2px solid var(--line); }
   .cell { padding: 22px; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
-  .cell h3 {
-    font-size: .7rem; font-weight: 700; letter-spacing: .13em; text-transform: uppercase;
-    margin: 0 0 12px; display: flex; align-items: center; gap: 9px;
-  }
+  .cell h3 { font-size: .7rem; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; margin: 0 0 12px; display: flex; align-items: center; gap: 9px; }
   .cell p { margin: 0 0 10px; font-size: .87rem; color: var(--mute); }
   .cell p:last-child { margin: 0; }
   .cell ul { margin: 0; padding-left: 18px; font-size: .87rem; color: var(--mute); }
   .cell li { margin: 6px 0; }
   .cell b { color: var(--ink); font-weight: 600; }
 
-  footer {
-    padding: 40px 0 60px; font-size: .8rem; color: var(--mute);
-    display: flex; flex-wrap: wrap; gap: 10px 26px; align-items: center;
-  }
+  footer { padding: 40px 0 60px; font-size: .8rem; color: var(--mute); display: flex; flex-wrap: wrap; gap: 10px 26px; align-items: center; }
   footer a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 
   @media (max-width: 620px) {
-    .row, .chart .head { grid-template-columns: 78px 1fr 66px; gap: 10px; font-size: .8rem; }
+    .row, .chart .head { grid-template-columns: 74px 1fr 62px; gap: 10px; font-size: .8rem; }
+    .chart .head span:nth-child(2) { font-size: 0; }
+    .chart .head span:nth-child(2)::after { content: "Abweichung"; font-size: .64rem; }
     .an { grid-template-columns: 70px 1fr; }
     .an .mini { display: none; }
     .topbar .badge { display: none; }
+    .cal-months { grid-template-columns: 1fr; }
+    .next-rain { gap: 18px; }
   }
 </style>
 </head>
@@ -289,7 +352,6 @@
 
 <div class="wrap">
 
-  <!-- ═══ Kopfleiste ═══ -->
   <div class="topbar">
     <div class="brand">
       <span class="mark">
@@ -299,256 +361,292 @@
       </span>
       <span class="name">Saisonausblick</span>
     </div>
-    <span class="badge">
+    <span class="badge" id="srcBadge">
       <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 3v18M3 12h18"/><path d="M5 5l14 14M19 5L5 19"/>
+        <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
       </svg>
-      Mockup — Beispieldaten
+      <span id="srcBadgeText">Live-Daten</span>
     </span>
   </div>
 
-  <!-- ═══ Hero ═══ -->
   <header class="hero">
-    <h1>Was die Modelle für die nächsten Monate sagen</h1>
+    <h1>Jeder Tag im Kalender — und wann wieder Regen kommt</h1>
     <p class="lead">
-      Echte Ensemble-Daten eines Saisonvorhersagemodells, eingeordnet in die Klimatologie
-      deines Orts. Dazu der Blick auf vergleichbare Jahre der Vergangenheit — und eine
-      ehrliche Messung, wie gut dieser Vergleich historisch wirklich funktioniert hat.
+      Die nächsten 16 Tage als echte Vorhersage, danach der aus 75 Jahren Messhistorie
+      abgeleitete Erwartungswert für jeden einzelnen Kalendertag. Wo die Vorhersage
+      aufhört und die Statistik anfängt, ist im Design sichtbar — nicht versteckt.
     </p>
 
-    <div class="place">
+    <form class="place" id="form">
       <span class="pin">
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/>
           <circle cx="12" cy="10" r="2.5"/>
         </svg>
       </span>
-      <input type="search" id="q" value="Fulda" placeholder="Ort eingeben" autocomplete="off">
-      <button type="button" id="go">Laden</button>
-    </div>
-    <p class="coords" id="coords">Fulda, Hessen — 50,556 °N &nbsp; 9,681 °O &nbsp;·&nbsp; Rasterpunkt ERA5, ca. 25 km</p>
+      <input type="search" id="q" value="Fulda" placeholder="Ort eingeben" autocomplete="off" spellcheck="false">
+      <button type="submit" id="go">Laden</button>
+    </form>
+    <p class="coords" id="coords">Fulda, Hessen</p>
   </header>
 
-  <!-- ═══ 01 · Aktuelle Lage ═══ -->
-  <section>
-    <div class="sec-head">
-      <span class="num">01</span>
-      <div>
-        <h2>Aktuelle Lage</h2>
+  <div class="loading" id="loading" hidden>
+    <span class="pulse"></span><span id="loadingText">Lade Daten …</span>
+  </div>
+  <div id="errors"></div>
+
+  <main id="out" hidden>
+
+    <!-- ═══ 01 · Tageskalender ═══ -->
+    <section id="secCal">
+      <div class="sec-head">
+        <span class="num">01</span>
+        <div><h2>Tageskalender</h2></div>
       </div>
-    </div>
-    <p class="sec-sub">
-      Abweichung der Monatsmitteltemperatur vom Normalwert 1991–2020, die letzten 14 Monate.
-      Das ist gemessene Historie aus der ERA5-Reanalyse — keine Prognose.
-      &nbsp;<span class="stat-inline" id="avg12">Ø 12 Monate +1,1 K</span>
-    </p>
+      <p class="sec-sub" id="calSub">
+        Für jeden Tag die Tageshöchsttemperatur und die Regenwahrscheinlichkeit.
+        Bis Tag 16 ist das eine echte Wettervorhersage. Danach steht dort, was an
+        diesem Kalendertag statistisch zu erwarten ist — ermittelt aus allen Jahren
+        seit 1950 in einem Fenster von ±7 Tagen und um den Klimatrend korrigiert.
+      </p>
 
-    <div class="chart">
-      <div class="head"><span>Monat</span><span>Abweichung vom Normalwert</span><span>Kelvin</span></div>
-      <div class="rows" id="histRows"></div>
-      <div class="axis"><span>−3 K</span><span>0</span><span>+3 K</span></div>
-    </div>
-
-    <div class="key">
-      <span><i class="warm"></i>wärmer als normal</span>
-      <span><i class="cold"></i>kälter als normal</span>
-    </div>
-  </section>
-
-  <!-- ═══ 02 · Saisonprognose ═══ -->
-  <section>
-    <div class="sec-head">
-      <span class="num">02</span>
-      <div><h2>Saisonprognose</h2></div>
-    </div>
-    <p class="sec-sub">
-      Monatsmittel aller 20 Ensemble-Mitglieder des Modells NOAA CFSv2, als Abweichung vom
-      Normalwert 1991–2020. Der Strich zeigt die Bandbreite des Ensembles, der Block den Median.
-      Je weiter in der Zukunft, desto breiter die Streuung — und desto weniger ist die Aussage wert.
-    </p>
-
-    <div class="months" id="fcMonths"></div>
-
-    <div class="key" style="margin-bottom:4px">
-      <span><i class="span"></i>Ensemble-Spanne 10.–90. Perzentil</span>
-      <span><i class="warm" style="width:5px"></i>Median</span>
-    </div>
-
-    <div class="note">
-      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/>
-      </svg>
-      <div>
-        <b>Rohe Modellwerte, nicht bias-korrigiert.</b> Ein Teil der gezeigten Abweichung ist
-        systematischer Modellfehler, nicht Signal. Aussagekräftig sind vor allem die Richtung
-        und wie einig sich das Ensemble ist — nicht der genaue Betrag.
-        CFSv2 ist zudem nicht das beste verfügbare System; für Europa liefert ECMWF SEAS5
-        bessere Ergebnisse, ist aber nur mit Registrierung und als GRIB/NetCDF abrufbar.
-      </div>
-    </div>
-  </section>
-
-  <!-- ═══ 03 · Vergleichbare Jahre ═══ -->
-  <section>
-    <div class="sec-head">
-      <span class="num">03</span>
-      <div><h2>Vergleichbare Jahre</h2></div>
-    </div>
-    <p class="sec-sub">
-      Welche Jahre seit 1950 hatten im Zeitraum Februar–Juli ein ähnliches Temperaturmuster
-      wie jetzt? Und wie lief es in diesen Jahren danach, im Zeitraum August–Oktober?
-      Alle Werte sind trendbereinigt — sonst würden schlicht immer die jüngsten Jahre gewinnen.
-    </p>
-
-    <div class="analogs" id="analogs"></div>
-
-    <div class="key">
-      <span><b style="color:var(--ink)">d</b>&nbsp;= Abstand im standardisierten Anomalie-Raum, kleiner heißt ähnlicher</span>
-    </div>
-  </section>
-
-  <!-- ═══ 04 · Validierung ═══ -->
-  <section>
-    <div class="sec-head">
-      <span class="num">04</span>
-      <div><h2>Wie verlässlich ist der Jahresvergleich?</h2></div>
-    </div>
-    <p class="sec-sub">
-      Nachgerechnet für jedes Jahr der Historie: Hätte man damals mit genau diesem Verfahren
-      die Folgemonate treffen können? Jede Vorhersage wird dabei nur aus den
-      <em>übrigen</em> Jahren gebildet und gegen die simpelste denkbare Alternative
-      verglichen — „es wird normal".
-    </p>
-
-    <table>
-      <tr><th>Kennzahl</th><th style="text-align:right">Wert</th></tr>
-      <tr><td>Getestete Jahre</td><td class="n">71</td></tr>
-      <tr><td>Korrelation Vorhersage ↔ Realität</td><td class="n">0,11</td></tr>
-      <tr><td>Mittlerer Fehler Analogverfahren</td><td class="n">0,78 K</td></tr>
-      <tr><td>Mittlerer Fehler „es wird normal"</td><td class="n">0,74 K</td></tr>
-      <tr class="accent"><td><b>Skill-Score gegenüber dieser Baseline</b></td><td class="n">−5 %</td></tr>
-    </table>
-
-    <div class="verdict">
-      <svg class="icon lg" viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>
-      </svg>
-      <div class="txt">
-        <p><b>Kein nachweisbarer Vorteil.</b> Der Jahresvergleich trifft die Monate
-        August–Oktober an diesem Ort nicht besser als die Annahme „es wird normal" —
-        sondern minimal schlechter.</p>
-        <p>Genau dafür ist dieser Abschnitt da. Das Verfahren aus Abschnitt 03 sieht
-        überzeugend aus, hält aber nicht, was die Optik verspricht. Die Analogjahre
-        taugen als Illustration der Bandbreite — nicht als Prognose. Wer sie anders
-        verkauft, verkauft Zufall als Wissen.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ═══ 05 · Methodik ═══ -->
-  <section style="border-bottom:none">
-    <div class="sec-head">
-      <span class="num">05</span>
-      <div><h2>Methodik &amp; Grenzen</h2></div>
-    </div>
-    <p class="sec-sub">
-      Alles rechnet im Browser. Kein Backend, keine Cookies, kein Tracking,
-      keine gespeicherten Daten.
-    </p>
-
-    <div class="grid2">
-
-      <div class="cell">
-        <h3>
-          <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 6h16M4 12h16M4 18h10"/>
-          </svg>
-          Datenquellen
-        </h3>
-        <ul>
-          <li><b>Historie:</b> Open-Meteo Archive API auf Basis der ERA5-Reanalyse des ECMWF, Tageswerte ab 1950</li>
-          <li><b>Prognose:</b> Open-Meteo Seasonal API auf Basis von NOAA CFSv2</li>
-          <li><b>Ortssuche:</b> Open-Meteo Geocoding API</li>
-        </ul>
-        <p style="margin-top:10px">Alle drei kostenlos, ohne Schlüssel, direkt aus dem Browser nutzbar.</p>
+      <div class="cal-controls">
+        <button class="chip" id="cal6" aria-pressed="true" type="button">6 Monate</button>
+        <button class="chip" id="cal12" aria-pressed="false" type="button">12 Monate</button>
       </div>
 
-      <div class="cell">
-        <h3>
-          <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>
-          </svg>
-          Normalwerte &amp; Trend
-        </h3>
-        <p>Normalwert ist das Mittel 1991–2020, die WMO-Referenzperiode. Für den
-        Jahresvergleich wird zusätzlich <b>pro Kalendermonat ein linearer Trend abgezogen</b>.</p>
-        <p>Ohne diesen Schritt wären die ähnlichsten Jahre fast immer die jüngsten — schlicht
-        weil es wärmer geworden ist. Der Trend ist das stärkste Einzelsignal in den Daten,
-        aber er ist kein Wettermuster.</p>
+      <div class="cal-months" id="calMonths"></div>
+
+      <div class="key">
+        <span><i class="warm"></i>echte Vorhersage (bis Tag 16)</span>
+        <span><i class="clim"></i>statistischer Erwartungswert</span>
+        <span><i style="height:6px;background:var(--ink)"></i>Balkenhöhe unten = Regenwahrscheinlichkeit</span>
+        <span><i style="width:8px;height:8px;background:var(--ink);border:none"></i>Regentag erwartet (≥ 1 mm)</span>
       </div>
 
-      <div class="cell">
-        <h3>
-          <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true">
-            <rect x="3" y="3" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/>
-            <path d="M11 7h6v6"/>
-          </svg>
-          Analogverfahren
-        </h3>
-        <p>Verglichen werden die trendbereinigten, monatsweise standardisierten
-        Temperaturabweichungen der letzten sechs Monate mit demselben Zeitfenster jedes
-        anderen Jahres. Distanzmaß ist der mittlere quadratische Abstand.</p>
-        <p>Gezeigt werden die fünf ähnlichsten Jahre. Jahre mit weniger als zwei Jahren
-        Abstand zum Zielfenster fallen raus, damit sich die Fenster nicht überlappen.</p>
+      <div class="seam">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 3l9 16H3z"/><path d="M12 9v5M12 16.5h.01"/>
+        </svg>
+        <div>
+          <b>Die schraffierten Tage sind keine Vorhersage.</b> Ob es am 14. Oktober regnet,
+          weiß heute niemand — das ist keine Frage besserer Modelle, sondern eine physikalische
+          Grenze bei etwa zwei Wochen. Was dort steht, ist die Häufigkeit aus 75 Jahren:
+          „an diesem Kalendertag war es in 41 % der Jahre nass“. Das ist eine belastbare
+          Aussage — nur eben eine andere als ein Wetterbericht.
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 02 · Regenverlauf ═══ -->
+    <section id="secRain">
+      <div class="sec-head">
+        <span class="num">02</span>
+        <div><h2>Wann kommt wieder Regen?</h2></div>
+      </div>
+      <p class="sec-sub">
+        Der nächste konkrete Regentag aus der laufenden Vorhersage — und danach der
+        Verlauf der Regenwahrscheinlichkeit über das kommende Jahr, Woche für Woche.
+      </p>
+
+      <div class="next-rain" id="nextRain"></div>
+
+      <div class="weeks">
+        <div class="wk-scale"><span>Regenwahrscheinlichkeit pro Woche</span><span id="wkMax">100 %</span></div>
+        <div class="weekbars" id="weekBars"></div>
+        <div class="wk-axis" id="weekAxis"></div>
       </div>
 
-      <div class="cell">
-        <h3>
-          <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>
-          </svg>
-          Validierung
-        </h3>
-        <p>Leave-one-out über alle Jahre: Für jedes Jahr wird die Vorhersage allein aus den
-        übrigen Jahren gebildet und mit dem tatsächlichen Verlauf verglichen.</p>
-        <p>Ein Skill-Score von <b>0</b> bedeutet: genauso gut wie „es wird normal".
-        Negativ bedeutet: schlechter als nichts tun.</p>
+      <div class="key">
+        <span><i class="warm"></i>Wochen mit echter Vorhersage</span>
+        <span><i class="clim"></i>klimatologische Häufigkeit</span>
       </div>
 
-      <div class="cell">
-        <h3>
-          <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 3l9 16H3z"/><path d="M12 9v5M12 16.5h.01"/>
-          </svg>
-          Was das Tool nicht kann
-        </h3>
-        <ul>
-          <li>Kein Wetter für einen bestimmten Tag. Jenseits von etwa zwei Wochen ist
-            Tagesgenauigkeit physikalisch nicht erreichbar — wer sie anzeigt, rät.</li>
-          <li>Keine belastbaren Niederschlagsaussagen. Der saisonale Skill für Niederschlag
-            liegt in Mitteleuropa nahe null.</li>
-          <li>Keine lokalen Effekte. Ein 25-km-Rasterpunkt kennt weder Tallage
-            noch Stadtwärmeinsel.</li>
-        </ul>
+      <div class="note" id="rainStats"></div>
+    </section>
+
+    <!-- ═══ 03 · Aktuelle Lage ═══ -->
+    <section id="secNow">
+      <div class="sec-head">
+        <span class="num">03</span>
+        <div><h2>Aktuelle Lage</h2></div>
+      </div>
+      <p class="sec-sub">
+        Abweichung der Monatsmitteltemperatur vom Normalwert 1991–2020, die letzten 14 Monate.
+        Gemessene Historie aus der ERA5-Reanalyse — keine Prognose.
+        &nbsp;<span class="stat-inline" id="avg12">—</span>
+      </p>
+
+      <div class="chart">
+        <div class="head"><span>Monat</span><span>Abweichung vom Normalwert</span><span>Kelvin</span></div>
+        <div class="rows" id="histRows"></div>
+        <div class="axis" id="histAxis"></div>
       </div>
 
-      <div class="cell">
-        <h3>
-          <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 3v18M5 8h14M5 16h14"/>
-          </svg>
-          Warum überhaupt
-        </h3>
-        <p>Die Rohdaten der Saisonvorhersage sind gut, die Darstellung für Endnutzer ist es
-        nicht. Es gibt Fachkarten mit Terzil-Wahrscheinlichkeiten, die ohne Vorbildung
-        niemand liest — und „42-Tage-Trends", die tagesgenaue Temperaturen für in sechs
-        Wochen zeigen und damit eine Genauigkeit vortäuschen, die es nicht gibt.</p>
-        <p>Diese Seite versucht das Dazwischen: <b>ortsbezogen, mit Bandbreite,
-        und mit offengelegtem Skill.</b></p>
+      <div class="key">
+        <span><i class="warm"></i>wärmer als normal</span>
+        <span><i class="cold"></i>kälter als normal</span>
+      </div>
+    </section>
+
+    <!-- ═══ 04 · Saisonprognose ═══ -->
+    <section id="secFc">
+      <div class="sec-head">
+        <span class="num">04</span>
+        <div><h2>Saisonprognose</h2></div>
+      </div>
+      <p class="sec-sub">
+        Monatsmittel aller Ensemble-Mitglieder des Modells NOAA CFSv2, als Abweichung vom
+        Normalwert 1991–2020. Der Strich zeigt die Bandbreite des Ensembles, der Block den
+        Median. Je weiter in der Zukunft, desto breiter die Streuung.
+      </p>
+
+      <div class="months" id="fcMonths"></div>
+
+      <div class="key" style="margin-bottom:4px">
+        <span><i class="span"></i>Ensemble-Spanne 10.–90. Perzentil</span>
+        <span><i class="warm" style="width:5px"></i>Median</span>
       </div>
 
-    </div>
-  </section>
+      <div class="note">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/>
+        </svg>
+        <div>
+          <b>Rohe Modellwerte, nicht bias-korrigiert.</b> Ein Teil der gezeigten Abweichung ist
+          systematischer Modellfehler, nicht Signal. Aussagekräftig sind vor allem die Richtung
+          und wie einig sich das Ensemble ist — nicht der genaue Betrag. CFSv2 ist zudem nicht
+          das beste verfügbare System; für Europa liefert ECMWF SEAS5 bessere Ergebnisse, ist
+          aber nur mit Registrierung und als GRIB/NetCDF abrufbar.
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 05 · Vergleichbare Jahre ═══ -->
+    <section id="secAna">
+      <div class="sec-head">
+        <span class="num">05</span>
+        <div><h2>Vergleichbare Jahre</h2></div>
+      </div>
+      <p class="sec-sub" id="anaSub"></p>
+
+      <div class="analogs" id="analogs"></div>
+
+      <div class="key">
+        <span><b style="color:var(--ink)">d</b>&nbsp;= Abstand im standardisierten Anomalie-Raum, kleiner heißt ähnlicher</span>
+      </div>
+    </section>
+
+    <!-- ═══ 06 · Validierung ═══ -->
+    <section id="secVal">
+      <div class="sec-head">
+        <span class="num">06</span>
+        <div><h2>Wie verlässlich ist der Jahresvergleich?</h2></div>
+      </div>
+      <p class="sec-sub">
+        Nachgerechnet für jedes Jahr der Historie: Hätte man damals mit genau diesem Verfahren
+        die Folgemonate treffen können? Jede Vorhersage wird nur aus den <em>übrigen</em> Jahren
+        gebildet und gegen die simpelste denkbare Alternative verglichen — „es wird normal“.
+      </p>
+
+      <table id="valTable"></table>
+      <div class="verdict" id="valVerdict"></div>
+    </section>
+
+    <!-- ═══ 07 · Methodik ═══ -->
+    <section style="border-bottom:none">
+      <div class="sec-head">
+        <span class="num">07</span>
+        <div><h2>Methodik &amp; Grenzen</h2></div>
+      </div>
+      <p class="sec-sub">
+        Alles rechnet im Browser. Kein Backend, keine Cookies, kein Tracking,
+        keine gespeicherten Daten.
+      </p>
+
+      <div class="grid2">
+
+        <div class="cell">
+          <h3>
+            <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+            Datenquellen
+          </h3>
+          <ul>
+            <li><b>Historie:</b> Open-Meteo Archive API, ERA5-Reanalyse des ECMWF, Tageswerte ab 1950</li>
+            <li><b>16-Tage-Vorhersage:</b> Open-Meteo Forecast API</li>
+            <li><b>Saisonprognose:</b> Open-Meteo Seasonal API, NOAA CFSv2</li>
+            <li><b>Ortssuche:</b> Open-Meteo Geocoding API</li>
+          </ul>
+        </div>
+
+        <div class="cell">
+          <h3>
+            <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17"/><path d="M3 9h18M8 4V2M16 4V2"/></svg>
+            Tageskalender
+          </h3>
+          <p>Für jeden Kalendertag werden alle Jahre seit 1950 in einem Fenster von
+          <b>±7 Tagen</b> ausgewertet — rund 1 100 Einzeltage pro Kalendertag. Das glättet
+          den Zufall einzelner Jahre heraus.</p>
+          <p>Die Temperatur wird über eine Regression auf das aktuelle Jahr fortgeschrieben,
+          damit die Erwartungswerte nicht auf dem Klima von 1985 hängenbleiben.
+          Regenwahrscheinlichkeit ist der Anteil der Tage mit mindestens 1 mm Niederschlag.</p>
+        </div>
+
+        <div class="cell">
+          <h3>
+            <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>
+            Normalwerte &amp; Trend
+          </h3>
+          <p>Normalwert ist das Mittel 1991–2020, die WMO-Referenzperiode. Für den
+          Jahresvergleich wird zusätzlich <b>pro Kalendermonat ein linearer Trend abgezogen</b>.</p>
+          <p>Ohne diesen Schritt wären die ähnlichsten Jahre fast immer die jüngsten — schlicht
+          weil es wärmer geworden ist. Der Trend ist das stärkste Einzelsignal in den Daten,
+          aber er ist kein Wettermuster.</p>
+        </div>
+
+        <div class="cell">
+          <h3>
+            <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/><path d="M11 7h6v6"/></svg>
+            Analogverfahren
+          </h3>
+          <p>Verglichen werden die trendbereinigten, monatsweise standardisierten
+          Temperaturabweichungen der letzten sechs Monate mit demselben Zeitfenster jedes
+          anderen Jahres. Distanzmaß ist der mittlere quadratische Abstand.</p>
+          <p>Gezeigt werden die fünf ähnlichsten Jahre. Jahre mit weniger als zwei Jahren
+          Abstand zum Zielfenster fallen raus, damit sich die Fenster nicht überlappen.</p>
+        </div>
+
+        <div class="cell">
+          <h3>
+            <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>
+            Validierung
+          </h3>
+          <p>Leave-one-out über alle Jahre: Für jedes Jahr wird die Vorhersage allein aus den
+          übrigen Jahren gebildet und mit dem tatsächlichen Verlauf verglichen.</p>
+          <p>Ein Skill-Score von <b>0</b> bedeutet: genauso gut wie „es wird normal“.
+          Negativ bedeutet: schlechter als nichts tun.</p>
+        </div>
+
+        <div class="cell">
+          <h3>
+            <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 16H3z"/><path d="M12 9v5M12 16.5h.01"/></svg>
+            Was das Tool nicht kann
+          </h3>
+          <ul>
+            <li>Kein Wetter für einen bestimmten Tag jenseits von etwa zwei Wochen.
+              Das ist keine Frage besserer Modelle, sondern eine physikalische Grenze —
+              wer dort Tageswerte anzeigt, rät.</li>
+            <li>Keine belastbare Saison-Niederschlagsprognose. Der Skill dafür liegt in
+              Mitteleuropa nahe null.</li>
+            <li>Keine lokalen Effekte. Ein 25-km-Rasterpunkt kennt weder Tallage
+              noch Stadtwärmeinsel.</li>
+          </ul>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
 
   <footer>
     <span>Daten: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> — ERA5 / ECMWF, NOAA CFSv2 — CC BY 4.0</span>
@@ -561,140 +659,954 @@
 "use strict";
 
 /* ═══════════════════════════════════════════════════════════════
-   MOCKUP — statische Beispieldaten für Fulda.
-   Die Renderfunktionen sind bereits so geschnitten, dass sie
-   später unverändert mit echten API-Daten gefüttert werden können.
+   Konfiguration
    ═══════════════════════════════════════════════════════════════ */
 
-const MON = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
-const MON_LANG = ["Januar","Februar","März","April","Mai","Juni",
-                  "Juli","August","September","Oktober","November","Dezember"];
+const HIST_START = 1950;   // ERA5 reicht bis 1940; ab 1950 ist die Abdeckung solider
+const CLIM_FROM  = 1991;   // WMO-Referenzperiode
+const CLIM_TO    = 2020;
+const DOY_WIN    = 7;      // Halbes Fenster in Tagen für die Tagesklimatologie
+const WET_MM     = 1.0;    // Ab wann ein Tag als Regentag gilt
+const WIN_LEN    = 6;      // Vergleichsfenster des Analogverfahrens in Monaten
+const LEAD_LEN   = 3;      // Vorhersagehorizont des Analogverfahrens in Monaten
+const K_ANALOGS  = 5;
+const MIN_GAP_M  = 24;
 
-// Gemessene Abweichung vom Normalwert 1991–2020, älteste zuerst
-const HISTORY = [
-  { y: 2025, m: 5,  a:  1.8 }, { y: 2025, m: 6,  a:  0.9 },
-  { y: 2025, m: 7,  a:  1.4 }, { y: 2025, m: 8,  a:  2.1 },
-  { y: 2025, m: 9,  a:  0.6 }, { y: 2025, m: 10, a: -0.4 },
-  { y: 2025, m: 11, a:  1.1 }, { y: 2026, m: 0,  a:  2.3 },
-  { y: 2026, m: 1,  a: -1.2 }, { y: 2026, m: 2,  a:  0.8 },
-  { y: 2026, m: 3,  a:  1.6 }, { y: 2026, m: 4,  a:  0.3 },
-  { y: 2026, m: 5,  a:  2.4 }, { y: 2026, m: 6,  a:  1.9 },
-];
+const MON   = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
+const MONL  = ["Januar","Februar","März","April","Mai","Juni",
+               "Juli","August","September","Oktober","November","Dezember"];
+const DOW   = ["Mo","Di","Mi","Do","Fr","Sa","So"];
+const DOWL  = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
 
-// Ensemble-Prognose: Median / 10. / 90. Perzentil der Abweichung, Mitglieder über Normal
-const FORECAST = [
-  { y: 2026, m: 7,  med: 1.2, lo:  0.1, hi: 2.3, up: 18, n: 20, norm: 18.0 },
-  { y: 2026, m: 8,  med: 0.9, lo: -0.2, hi: 2.0, up: 16, n: 20, norm: 13.9 },
-  { y: 2026, m: 9,  med: 0.7, lo: -0.8, hi: 2.1, up: 14, n: 20, norm:  9.6 },
-  { y: 2026, m: 10, med: 0.4, lo: -1.4, hi: 2.2, up: 12, n: 20, norm:  5.0 },
-  { y: 2026, m: 11, med: 0.6, lo: -1.9, hi: 2.9, up: 12, n: 20, norm:  2.0 },
-  { y: 2027, m: 0,  med: 0.3, lo: -2.6, hi: 3.1, up: 11, n: 20, norm:  1.0 },
-  { y: 2027, m: 1,  med: 0.5, lo: -2.4, hi: 3.3, up: 11, n: 20, norm:  1.6 },
-  { y: 2027, m: 2,  med: 0.8, lo: -1.6, hi: 2.9, up: 13, n: 20, norm:  4.8 },
-];
+const DEFAULT_PLACE = { name: "Fulda", admin: "Hessen", country: "Deutschland",
+                        lat: 50.5558, lon: 9.6808 };
 
-// Ähnlichste Jahre und was in ihnen in den Folgemonaten passierte
-const ANALOGS = [
-  { year: 1959, d: 0.31, after:  0.9 },
-  { year: 2003, d: 0.38, after:  1.4 },
-  { year: 1976, d: 0.44, after: -0.3 },
-  { year: 2018, d: 0.47, after:  1.1 },
-  { year: 1994, d: 0.52, after:  0.2 },
-];
+const $ = (id) => document.getElementById(id);
 
-const SCALE_HIST = 3;   // halber Vollausschlag der Balken in K
-const SCALE_FC   = 3.5;
+/* ═══════════════════════════════════════════════════════════════
+   Helfer
+   ═══════════════════════════════════════════════════════════════ */
 
-const fmt = (v, d = 1) => (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(d).replace(".", ",");
-const clamp = (v, s) => Math.max(-1, Math.min(1, v / s));
+const mean = (a) => a.reduce((s, x) => s + x, 0) / a.length;
+const sum  = (a) => a.reduce((s, x) => s + x, 0);
 
-/* ── 01 · Historie ───────────────────────────────────────────── */
+function std(a) {
+  if (a.length < 2) return 0;
+  const m = mean(a);
+  return Math.sqrt(sum(a.map((x) => (x - m) ** 2)) / (a.length - 1));
+}
 
-function renderHistory() {
-  const box = document.getElementById("histRows");
+function quantile(sorted, p) {
+  if (!sorted.length) return NaN;
+  const i = (sorted.length - 1) * p;
+  const lo = Math.floor(i), hi = Math.ceil(i);
+  return lo === hi ? sorted[lo] : sorted[lo] + (sorted[hi] - sorted[lo]) * (i - lo);
+}
+
+function pearson(x, y) {
+  const n = x.length;
+  if (n < 3) return NaN;
+  const mx = mean(x), my = mean(y);
+  let sxy = 0, sxx = 0, syy = 0;
+  for (let i = 0; i < n; i++) {
+    const dx = x[i] - mx, dy = y[i] - my;
+    sxy += dx * dy; sxx += dx * dx; syy += dy * dy;
+  }
+  return (sxx === 0 || syy === 0) ? NaN : sxy / Math.sqrt(sxx * syy);
+}
+
+function linreg(x, y) {
+  const mx = mean(x), my = mean(y);
+  let num = 0, den = 0;
+  for (let i = 0; i < x.length; i++) {
+    num += (x[i] - mx) * (y[i] - my);
+    den += (x[i] - mx) ** 2;
+  }
+  const b = den === 0 ? 0 : num / den;
+  return { a: my - b * mx, b };
+}
+
+const fmtSigned = (v, d = 1) => (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(d).replace(".", ",");
+const fmtNum    = (v, d = 1) => v.toFixed(d).replace(".", ",");
+const pad2      = (n) => String(n).padStart(2, "0");
+const iso       = (d) => d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+
+const absIdx  = (year, month0) => (year - HIST_START) * 12 + month0;
+const idxYear = (i) => HIST_START + Math.floor(i / 12);
+const idxMon  = (i) => ((i % 12) + 12) % 12;
+
+/** Tag im Jahr, 0-basiert, Schaltjahre auf 365 Positionen normiert. */
+function doyOf(year, month0, day) {
+  const start = Date.UTC(year, 0, 1);
+  const here  = Date.UTC(year, month0, day);
+  let d = Math.round((here - start) / 86400000);
+  const leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+  if (leap && d > 58) d -= 1;          // 29. Februar auf den 28. legen
+  return Math.min(d, 364);
+}
+
+/** Montag = 0 */
+const dowMon = (date) => (date.getDay() + 6) % 7;
+
+/* ═══════════════════════════════════════════════════════════════
+   Netzwerk
+   ═══════════════════════════════════════════════════════════════ */
+
+async function getJSON(url) {
+  let res;
+  try {
+    res = await fetch(url);
+  } catch (e) {
+    throw new Error("Netzwerkfehler — Server nicht erreichbar (" + e.message + ")");
+  }
+  let json = null;
+  try { json = await res.json(); } catch (_) { /* unten behandelt */ }
+  if (json && json.error) throw new Error(json.reason || "Unbekannter API-Fehler");
+  if (!res.ok) throw new Error("HTTP " + res.status + " " + res.statusText);
+  if (!json) throw new Error("Antwort war kein gültiges JSON");
+  return json;
+}
+
+async function geocode(query) {
+  const j = await getJSON("https://geocoding-api.open-meteo.com/v1/search?name="
+    + encodeURIComponent(query) + "&count=1&language=de&format=json");
+  if (!j.results || !j.results.length) return null;
+  const r = j.results[0];
+  return { name: r.name, admin: r.admin1 || "", country: r.country || "",
+           lat: r.latitude, lon: r.longitude };
+}
+
+function fetchHistory(lat, lon) {
+  const end = new Date(Date.now() - 6 * 86400000);
+  return getJSON("https://archive-api.open-meteo.com/v1/archive"
+    + "?latitude=" + lat + "&longitude=" + lon
+    + "&start_date=" + HIST_START + "-01-01&end_date=" + iso(end)
+    + "&daily=temperature_2m_mean,temperature_2m_max,temperature_2m_min,precipitation_sum"
+    + "&timezone=Europe%2FBerlin");
+}
+
+function fetchForecast(lat, lon) {
+  return getJSON("https://api.open-meteo.com/v1/forecast"
+    + "?latitude=" + lat + "&longitude=" + lon
+    + "&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max"
+    + "&forecast_days=16&timezone=Europe%2FBerlin");
+}
+
+/** Die Parameterunterstützung variiert — mehrere Varianten der Reihe nach probieren. */
+async function fetchSeasonal(lat, lon) {
+  const base = "https://seasonal-api.open-meteo.com/v1/seasonal?latitude=" + lat
+             + "&longitude=" + lon + "&timezone=Europe%2FBerlin";
+  const variants = [
+    base + "&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&forecast_days=270",
+    base + "&daily=temperature_2m_max,temperature_2m_min,precipitation_sum",
+    base + "&daily=temperature_2m_max,temperature_2m_min",
+  ];
+  const problems = [];
+  for (const url of variants) {
+    try {
+      const j = await getJSON(url);
+      if (j && j.daily && j.daily.time && j.daily.time.length) return j;
+      problems.push("leere Antwort");
+    } catch (e) { problems.push(e.message); }
+  }
+  throw new Error(problems.join(" · "));
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Tagesklimatologie — Grundlage des Kalenders
+   ═══════════════════════════════════════════════════════════════ */
+
+/**
+ * Wertet für jeden der 365 Kalendertage alle Jahre in einem Fenster von
+ * ±DOY_WIN Tagen aus. Die Temperatur wird per Regression auf das laufende
+ * Jahr fortgeschrieben, damit der Erwartungswert nicht im Klima der
+ * Vergangenheit hängenbleibt.
+ */
+function buildDoyClimatology(daily, targetYear) {
+  const time = daily.time;
+  const tmax = daily.temperature_2m_max;
+  const tmin = daily.temperature_2m_min;
+  const prcp = daily.precipitation_sum;
+
+  // Rohdaten nach Kalendertag bündeln
+  const buckets = Array.from({ length: 365 }, () => ({ y: [], tx: [], tn: [], p: [] }));
+  for (let i = 0; i < time.length; i++) {
+    const year = +time[i].slice(0, 4), m = +time[i].slice(5, 7) - 1, d = +time[i].slice(8, 10);
+    const tx = tmax[i], tn = tmin[i], p = prcp[i];
+    if (tx === null || tx === undefined) continue;
+    const b = buckets[doyOf(year, m, d)];
+    b.y.push(year); b.tx.push(tx);
+    b.tn.push(tn === null ? NaN : tn);
+    b.p.push(p === null ? NaN : p);
+  }
+
+  const out = Array.from({ length: 365 }, () => null);
+  for (let doy = 0; doy < 365; doy++) {
+    const ys = [], txs = [], tns = [], ps = [];
+    for (let k = -DOY_WIN; k <= DOY_WIN; k++) {
+      const b = buckets[(doy + k + 365) % 365];
+      for (let j = 0; j < b.y.length; j++) {
+        ys.push(b.y[j]); txs.push(b.tx[j]);
+        if (!Number.isNaN(b.tn[j])) tns.push(b.tn[j]);
+        if (!Number.isNaN(b.p[j]))  ps.push(b.p[j]);
+      }
+    }
+    if (txs.length < 30) continue;
+
+    const reg = linreg(ys, txs);
+    const sorted = [...txs].sort((a, b) => a - b);
+    out[doy] = {
+      n: txs.length,
+      tmax: reg.a + reg.b * targetYear,          // trendkorrigierter Erwartungswert
+      tmaxP10: quantile(sorted, 0.1) + reg.b * (targetYear - mean(ys)),
+      tmaxP90: quantile(sorted, 0.9) + reg.b * (targetYear - mean(ys)),
+      tmin: tns.length ? mean(tns) : NaN,
+      rainProb: ps.length ? ps.filter((v) => v >= WET_MM).length / ps.length : NaN,
+      precMean: ps.length ? mean(ps) : NaN,
+      trendPerDecade: reg.b * 10,
+    };
+  }
+  return out;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Monatsaggregation, Normalwerte, Trend
+   ═══════════════════════════════════════════════════════════════ */
+
+function aggregateMonthly(daily) {
+  const time = daily.time;
+  const tArr = daily.temperature_2m_mean || [];
+  const pArr = daily.precipitation_sum || [];
+
+  const last = time[time.length - 1];
+  const nMonths = absIdx(+last.slice(0, 4), +last.slice(5, 7) - 1) + 1;
+
+  const tSum = new Float64Array(nMonths), tN = new Int32Array(nMonths);
+  const pSum = new Float64Array(nMonths), pN = new Int32Array(nMonths);
+
+  for (let d = 0; d < time.length; d++) {
+    const i = absIdx(+time[d].slice(0, 4), +time[d].slice(5, 7) - 1);
+    if (i < 0 || i >= nMonths) continue;
+    const tv = tArr[d], pv = pArr[d];
+    if (tv !== null && tv !== undefined && !Number.isNaN(tv)) { tSum[i] += tv; tN[i]++; }
+    if (pv !== null && pv !== undefined && !Number.isNaN(pv)) { pSum[i] += pv; pN[i]++; }
+  }
+
+  const t = new Array(nMonths).fill(null), p = new Array(nMonths).fill(null);
+  const days = new Array(nMonths).fill(0), expected = new Array(nMonths).fill(0);
+
+  for (let i = 0; i < nMonths; i++) {
+    expected[i] = new Date(Date.UTC(idxYear(i), idxMon(i) + 1, 0)).getUTCDate();
+    days[i] = tN[i];
+    if (tN[i] > 0) t[i] = tSum[i] / tN[i];
+    if (pN[i] >= expected[i] - 1) p[i] = pSum[i];
+  }
+  return { t, p, days, expected, nMonths };
+}
+
+function buildClimatology(monthly) {
+  const { t, p, nMonths } = monthly;
+  const normT = new Array(12).fill(NaN), normP = new Array(12).fill(NaN);
+  const trend = new Array(12).fill(null), sdT = new Array(12).fill(1);
+
+  for (let m = 0; m < 12; m++) {
+    const climT = [], climP = [], regX = [], regY = [];
+    for (let y = HIST_START; y <= idxYear(nMonths - 1); y++) {
+      const i = absIdx(y, m);
+      if (i < 0 || i >= nMonths) continue;
+      if (t[i] !== null) {
+        regX.push(y); regY.push(t[i]);
+        if (y >= CLIM_FROM && y <= CLIM_TO) climT.push(t[i]);
+      }
+      if (p[i] !== null && y >= CLIM_FROM && y <= CLIM_TO) climP.push(p[i]);
+    }
+    if (climT.length) normT[m] = mean(climT);
+    if (climP.length) normP[m] = mean(climP);
+    if (regX.length >= 10) trend[m] = linreg(regX, regY);
+  }
+
+  const anomDet = new Array(nMonths).fill(null);
+  for (let i = 0; i < nMonths; i++) {
+    const m = idxMon(i);
+    if (t[i] === null || !trend[m]) continue;
+    anomDet[i] = t[i] - (trend[m].a + trend[m].b * idxYear(i));
+  }
+
+  for (let m = 0; m < 12; m++) {
+    const vals = [];
+    for (let i = m; i < nMonths; i += 12) if (anomDet[i] !== null) vals.push(anomDet[i]);
+    const s = std(vals);
+    sdT[m] = s > 0.01 ? s : 1;
+  }
+
+  const z = anomDet.map((v, i) => (v === null ? null : v / sdT[idxMon(i)]));
+  const anomNorm = t.map((v, i) => (v === null || Number.isNaN(normT[idxMon(i)]))
+                                   ? null : v - normT[idxMon(i)]);
+  return { normT, normP, trend, sdT, anomDet, anomNorm, z };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Analogverfahren und Validierung
+   ═══════════════════════════════════════════════════════════════ */
+
+function window6(z, end) {
+  if (end - WIN_LEN + 1 < 0) return null;
+  const w = [];
+  for (let i = end - WIN_LEN + 1; i <= end; i++) {
+    if (z[i] === null || z[i] === undefined) return null;
+    w.push(z[i]);
+  }
+  return w;
+}
+
+function target(anomDet, end) {
+  const v = [];
+  for (let i = end + 1; i <= end + LEAD_LEN; i++) {
+    if (i >= anomDet.length || anomDet[i] === null) return null;
+    v.push(anomDet[i]);
+  }
+  return mean(v);
+}
+
+function findAnalogs(z, anomDet, anchor, k, requireTarget) {
+  const base = window6(z, anchor);
+  if (!base) return [];
+  const out = [];
+  for (let i = idxMon(anchor); i < z.length; i += 12) {
+    if (Math.abs(i - anchor) < MIN_GAP_M) continue;
+    const w = window6(z, i);
+    if (!w) continue;
+    const tgt = target(anomDet, i);
+    if (requireTarget && tgt === null) continue;
+    let d = 0;
+    for (let j = 0; j < WIN_LEN; j++) d += (w[j] - base[j]) ** 2;
+    out.push({ idx: i, year: idxYear(i), dist: Math.sqrt(d / WIN_LEN), target: tgt });
+  }
+  out.sort((a, b) => a.dist - b.dist);
+  return out.slice(0, k);
+}
+
+function validate(z, anomDet, anchorMonth) {
+  const preds = [], obs = [];
+  for (let i = anchorMonth; i < z.length; i += 12) {
+    const actual = target(anomDet, i);
+    if (actual === null || !window6(z, i)) continue;
+    const an = findAnalogs(z, anomDet, i, K_ANALOGS, true);
+    if (an.length < K_ANALOGS) continue;
+    preds.push(mean(an.map((a) => a.target)));
+    obs.push(actual);
+  }
+  if (preds.length < 15) return { n: preds.length, ok: false };
+  const maeA = mean(preds.map((p, i) => Math.abs(p - obs[i])));
+  const maeC = mean(obs.map((o) => Math.abs(o)));
+  return { ok: true, n: preds.length, r: pearson(preds, obs),
+           maeAnalog: maeA, maeClim: maeC, skill: maeC === 0 ? 0 : 1 - maeA / maeC };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Saisonprognose aufbereiten
+   ═══════════════════════════════════════════════════════════════ */
+
+const memberKeys = (d, prefix) =>
+  Object.keys(d).filter((k) => k === prefix || k.startsWith(prefix + "_")).sort();
+
+function aggregateSeasonal(seasonal) {
+  const d = seasonal.daily;
+  const maxKeys = memberKeys(d, "temperature_2m_max");
+  const minKeys = memberKeys(d, "temperature_2m_min");
+  const prcKeys = memberKeys(d, "precipitation_sum");
+  if (!maxKeys.length || !minKeys.length) return [];
+
+  const sfx = (k, p) => k.slice(p.length);
+  const minBy = new Map(minKeys.map((k) => [sfx(k, "temperature_2m_min"), k]));
+  const prcBy = new Map(prcKeys.map((k) => [sfx(k, "precipitation_sum"), k]));
+
+  const pairs = [];
+  for (const mk of maxKeys) {
+    const s = sfx(mk, "temperature_2m_max");
+    if (minBy.has(s)) pairs.push({ max: mk, min: minBy.get(s), prc: prcBy.get(s) || null });
+  }
+  if (!pairs.length) return [];
+
+  const buckets = new Map();
+  for (let i = 0; i < d.time.length; i++) {
+    const key = d.time[i].slice(0, 7);
+    let b = buckets.get(key);
+    if (!b) {
+      b = { year: +key.slice(0, 4), month: +key.slice(5, 7) - 1, days: 0,
+            tSum: new Float64Array(pairs.length), tN: new Int32Array(pairs.length),
+            pSum: new Float64Array(pairs.length), pN: new Int32Array(pairs.length) };
+      buckets.set(key, b);
+    }
+    b.days++;
+    for (let m = 0; m < pairs.length; m++) {
+      const hi = d[pairs[m].max][i], lo = d[pairs[m].min][i];
+      if (hi !== null && lo !== null && !Number.isNaN(hi) && !Number.isNaN(lo)) {
+        b.tSum[m] += (hi + lo) / 2; b.tN[m]++;
+      }
+      if (pairs[m].prc) {
+        const pv = d[pairs[m].prc][i];
+        if (pv !== null && !Number.isNaN(pv)) { b.pSum[m] += pv; b.pN[m]++; }
+      }
+    }
+  }
+
+  const out = [];
+  for (const b of buckets.values()) {
+    const full = new Date(Date.UTC(b.year, b.month + 1, 0)).getUTCDate();
+    if (b.days < full - 2) continue;
+    const temps = [], precs = [];
+    for (let m = 0; m < pairs.length; m++) {
+      if (b.tN[m] >= full - 2) temps.push(b.tSum[m] / b.tN[m]);
+      if (b.pN[m] >= full - 2) precs.push(b.pSum[m]);
+    }
+    if (temps.length) out.push({ year: b.year, month: b.month, temps, precs });
+  }
+  out.sort((a, b) => (a.year - b.year) || (a.month - b.month));
+  return out;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Tagesreihe für Kalender und Regenverlauf
+   ═══════════════════════════════════════════════════════════════ */
+
+/**
+ * Baut die Tagesliste für die kommenden `months` Monate.
+ * Tage innerhalb der Vorhersagereichweite bekommen echte Werte
+ * (source: "fc"), alle übrigen den Erwartungswert (source: "clim").
+ */
+function buildDaySeries(doyClim, forecast, months) {
+  const fcMap = new Map();
+  if (forecast && forecast.daily) {
+    const f = forecast.daily;
+    for (let i = 0; i < f.time.length; i++) {
+      fcMap.set(f.time[i], {
+        tmax: f.temperature_2m_max ? f.temperature_2m_max[i] : null,
+        tmin: f.temperature_2m_min ? f.temperature_2m_min[i] : null,
+        prec: f.precipitation_sum ? f.precipitation_sum[i] : null,
+        prob: f.precipitation_probability_max ? f.precipitation_probability_max[i] : null,
+      });
+    }
+  }
+
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const start = new Date(today.getFullYear(), today.getMonth(), 1);
+  const end = new Date(today.getFullYear(), today.getMonth() + months, 0);
+
+  const days = [];
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const key = iso(d);
+    const clim = doyClim[doyOf(d.getFullYear(), d.getMonth(), d.getDate())];
+    const fc = fcMap.get(key);
+    const past = d < today;
+
+    let rec = {
+      date: new Date(d), key, past,
+      isToday: d.getTime() === today.getTime(),
+      clim,
+      source: fc ? "fc" : "clim",
+      tmax: null, rainProb: null, prec: null, wet: false,
+    };
+
+    if (fc && fc.tmax !== null && fc.tmax !== undefined) {
+      rec.tmax = fc.tmax;
+      rec.prec = fc.prec;
+      rec.rainProb = (fc.prob !== null && fc.prob !== undefined)
+        ? fc.prob / 100
+        : (clim ? clim.rainProb : null);
+      rec.wet = (fc.prec !== null && fc.prec >= WET_MM);
+    } else if (clim) {
+      rec.source = "clim";
+      rec.tmax = clim.tmax;
+      rec.rainProb = clim.rainProb;
+      rec.prec = clim.precMean;
+      rec.wet = clim.rainProb >= 0.5;
+    }
+    days.push(rec);
+  }
+  return days;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Darstellung
+   ═══════════════════════════════════════════════════════════════ */
+
+function renderCalendar(days, months) {
+  const box = $("calMonths");
   box.innerHTML = "";
 
-  [...HISTORY].reverse().forEach((h) => {
-    const c = clamp(h.a, SCALE_HIST);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const limit = new Date(today.getFullYear(), today.getMonth() + months, 0);
+  const shown = days.filter((d) => d.date <= limit);
+
+  // nach Monat gruppieren
+  const groups = new Map();
+  for (const d of shown) {
+    const k = d.date.getFullYear() + "-" + d.date.getMonth();
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(d);
+  }
+
+  for (const [, list] of groups) {
+    const first = list[0].date;
+    const el = document.createElement("div");
+    el.className = "cal-m";
+
+    // Kennzahlen nur über die noch kommenden Tage — Vergangenes bleibt leer
+    const ahead = list.filter((d) => !d.past);
+    const withProb = ahead.filter((d) => d.rainProb !== null && !Number.isNaN(d.rainProb));
+    const wetDays = withProb.length ? withProb.reduce((s, d) => s + d.rainProb, 0) : 0;
+    const temps = ahead.filter((d) => d.tmax !== null).map((d) => d.tmax);
+
+    el.innerHTML =
+      '<div class="cap"><span class="t">' + MONL[first.getMonth()] + " " + first.getFullYear()
+      + '</span><span class="s">'
+      + (temps.length ? "Ø max " + fmtNum(mean(temps)) + " °C · " : "")
+      + Math.round(wetDays) + " Regentage</span></div>"
+      + '<div class="dow">' + DOW.map((d) => "<span>" + d + "</span>").join("") + "</div>";
+
+    const grid = document.createElement("div");
+    grid.className = "days";
+
+    for (let i = 0; i < dowMon(first); i++) {
+      const pad = document.createElement("div");
+      pad.className = "day pad";
+      grid.appendChild(pad);
+    }
+
+    for (const d of list) {
+      const cell = document.createElement("div");
+
+      // Vergangene Tage bleiben leer: dort einen Erwartungswert anzuzeigen,
+      // würde wie eine Vorhersage aussehen, obwohl das Wetter längst feststeht.
+      if (d.past) {
+        cell.className = "day pad";
+        cell.innerHTML = '<span class="dnum">' + d.date.getDate() + "</span>";
+        grid.appendChild(cell);
+        continue;
+      }
+
+      cell.className = "day" + (d.source === "clim" ? " clim" : "")
+                     + (d.isToday ? " today" : "");
+
+      const prob = (d.rainProb === null || Number.isNaN(d.rainProb)) ? 0 : d.rainProb;
+      const tip = d.source === "fc"
+        ? DOWL[dowMon(d.date)] + ", " + d.date.getDate() + ". " + MONL[d.date.getMonth()]
+          + " — Vorhersage: " + (d.tmax === null ? "?" : fmtNum(d.tmax) + " °C")
+          + ", " + Math.round(prob * 100) + " % Regenwahrscheinlichkeit"
+          + (d.prec !== null ? ", " + fmtNum(d.prec) + " mm" : "")
+        : DOWL[dowMon(d.date)] + ", " + d.date.getDate() + ". " + MONL[d.date.getMonth()]
+          + " — Erwartungswert aus " + (d.clim ? d.clim.n : 0) + " Messtagen: "
+          + (d.tmax === null ? "?" : fmtNum(d.tmax) + " °C")
+          + ", an " + Math.round(prob * 100) + " % der Jahre nass";
+      cell.title = tip;
+
+      cell.innerHTML =
+        '<span class="dnum">' + d.date.getDate() + "</span>"
+        + '<span class="temp">' + (d.tmax === null ? "–" : Math.round(d.tmax) + "°") + "</span>"
+        + (d.wet ? '<span class="wet"></span>' : "")
+        + '<span class="rain"><b style="width:' + (prob * 100).toFixed(0) + '%"></b></span>';
+      grid.appendChild(cell);
+    }
+
+    el.appendChild(grid);
+    box.appendChild(el);
+  }
+}
+
+function renderNextRain(days, hasForecast) {
+  const box = $("nextRain");
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+
+  const fcDays = days.filter((d) => d.source === "fc" && d.date >= today);
+  const next = fcDays.find((d) => d.wet);
+
+  let html = "";
+  if (next) {
+    const inDays = Math.round((next.date - today) / 86400000);
+    html =
+      '<div class="col"><span class="lbl">Nächster Regentag</span>'
+      + '<div class="big">' + (inDays === 0 ? "heute" : inDays === 1 ? "morgen"
+          : "in " + inDays + " Tagen") + "</div></div>"
+      + '<div class="col"><span class="lbl">Termin</span><div class="v">'
+      + DOWL[dowMon(next.date)] + ", " + next.date.getDate() + ". "
+      + MONL[next.date.getMonth()] + "</div></div>"
+      + '<div class="col"><span class="lbl">Menge</span><div class="v">'
+      + (next.prec === null ? "?" : fmtNum(next.prec) + " mm") + "</div></div>"
+      + '<div class="col"><span class="lbl">Wahrscheinlichkeit</span><div class="v">'
+      + Math.round((next.rainProb || 0) * 100) + " %</div></div>";
+  } else if (hasForecast && fcDays.length) {
+    const horizon = fcDays.length;
+    const after = days.filter((d) => d.source === "clim" && d.date > today).slice(0, 30);
+    const avgProb = after.length
+      ? mean(after.filter((d) => d.rainProb !== null).map((d) => d.rainProb)) : NaN;
+    html =
+      '<div class="col"><span class="lbl">Nächster Regentag</span>'
+      + '<div class="big">nicht in Sicht</div></div>'
+      + '<div class="col"><span class="lbl">Vorhersagereichweite</span><div class="v">'
+      + horizon + " Tage trocken</div></div>"
+      + '<div class="col"><span class="lbl">Danach statistisch</span><div class="v">'
+      + (Number.isNaN(avgProb) ? "—" : Math.round(avgProb * 100) + " % pro Tag") + "</div></div>";
+  } else {
+    html = '<div class="col"><span class="lbl">Nächster Regentag</span>'
+         + '<div class="big">—</div></div>'
+         + '<div class="col"><span class="lbl">Hinweis</span><div class="v">'
+         + "Vorhersage nicht verfügbar</div></div>";
+  }
+  box.innerHTML = html;
+}
+
+function renderWeeks(days) {
+  const bars = $("weekBars");
+  const axis = $("weekAxis");
+  bars.innerHTML = ""; axis.innerHTML = "";
+
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const future = days.filter((d) => d.date >= today);
+
+  // in 7er-Blöcke bündeln
+  const weeks = [];
+  for (let i = 0; i < future.length; i += 7) {
+    const chunk = future.slice(i, i + 7);
+    const probs = chunk.filter((d) => d.rainProb !== null && !Number.isNaN(d.rainProb))
+                       .map((d) => d.rainProb);
+    if (!probs.length) continue;
+    weeks.push({
+      start: chunk[0].date,
+      prob: mean(probs),
+      isFc: chunk.some((d) => d.source === "fc"),
+    });
+  }
+
+  const maxProb = Math.max(0.6, ...weeks.map((w) => w.prob));
+  $("wkMax").textContent = Math.round(maxProb * 100) + " %";
+
+  let lastMonth = -1;
+  weeks.forEach((w) => {
+    const el = document.createElement("div");
+    el.className = "wk" + (w.isFc ? "" : " clim");
+    el.title = "Woche ab " + w.start.getDate() + ". " + MONL[w.start.getMonth()]
+             + " — " + Math.round(w.prob * 100) + " % Regenwahrscheinlichkeit pro Tag"
+             + (w.isFc ? " (Vorhersage)" : " (Klimatologie)");
+    el.innerHTML = '<b style="height:' + ((w.prob / maxProb) * 100).toFixed(1) + '%"></b>';
+    bars.appendChild(el);
+
+    const lab = document.createElement("span");
+    lab.textContent = w.start.getMonth() !== lastMonth ? MON[w.start.getMonth()] : "";
+    lastMonth = w.start.getMonth();
+    axis.appendChild(lab);
+  });
+}
+
+function renderRainStats(days, doyClim) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const next90 = days.filter((d) => d.date >= today).slice(0, 90);
+  const probs = next90.filter((d) => d.rainProb !== null).map((d) => d.rainProb);
+  const expWet = probs.length ? probs.reduce((s, p) => s + p, 0) : 0;
+
+  // Trockenste und nasseste Woche im kommenden Jahr, rein klimatologisch
+  const climDays = days.filter((d) => d.source === "clim" && d.date >= today);
+  let driest = null, wettest = null;
+  for (let i = 0; i + 7 <= climDays.length; i += 7) {
+    const chunk = climDays.slice(i, i + 7).filter((d) => d.rainProb !== null);
+    if (chunk.length < 5) continue;
+    const p = mean(chunk.map((d) => d.rainProb));
+    if (!driest || p < driest.p) driest = { p, d: chunk[0].date };
+    if (!wettest || p > wettest.p) wettest = { p, d: chunk[0].date };
+  }
+
+  $("rainStats").innerHTML =
+    '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">'
+    + '<path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/></svg>'
+    + "<div><b>In den kommenden 90 Tagen sind rund " + Math.round(expWet)
+    + " Regentage zu erwarten</b> — als Summe der Tageswahrscheinlichkeiten, nicht als Kalenderliste. "
+    + (driest && wettest
+        ? "Statistisch am trockensten wird die Woche ab dem " + driest.d.getDate() + ". "
+          + MONL[driest.d.getMonth()] + " (" + Math.round(driest.p * 100)
+          + " % pro Tag), am nassesten die Woche ab dem " + wettest.d.getDate() + ". "
+          + MONL[wettest.d.getMonth()] + " (" + Math.round(wettest.p * 100) + " % pro Tag). "
+        : "")
+    + "Welcher einzelne Tag davon betroffen ist, lässt sich über zwei Wochen hinaus nicht sagen.</div>";
+}
+
+function renderNow(monthly, clim) {
+  const rows = $("histRows");
+  rows.innerHTML = "";
+
+  const last = monthly.nMonths - 1;
+  const first = Math.max(0, last - 13);
+  const vals = [];
+  for (let i = first; i <= last; i++) if (clim.anomNorm[i] !== null) vals.push(Math.abs(clim.anomNorm[i]));
+  const scale = Math.max(2, Math.ceil(Math.max(...vals, 1)));
+  $("histAxis").innerHTML = "<span>−" + scale + " K</span><span>0</span><span>+" + scale + " K</span>";
+
+  for (let i = last; i >= first; i--) {
+    const a = clim.anomNorm[i];
+    if (a === null) continue;
+    const c = Math.max(-1, Math.min(1, a / scale));
+    const partial = monthly.days[i] < monthly.expected[i] - 1;
     const row = document.createElement("div");
     row.className = "row";
     row.innerHTML =
-      '<div class="lbl">' + MON[h.m] + " " + h.y + "</div>"
-      + '<div class="track"><div class="b ' + (h.a >= 0 ? "warm" : "cold") + '" style="'
-        + "left:" + (50 + Math.min(0, c) * 50) + "%;"
-        + "width:" + Math.max(0.8, Math.abs(c) * 50) + '%"></div></div>'
-      + '<div class="num">' + fmt(h.a) + "</div>";
-    box.appendChild(row);
-  });
+      '<div class="lbl">' + MON[idxMon(i)] + " " + idxYear(i) + (partial ? " *" : "") + "</div>"
+      + '<div class="track"><div class="b ' + (a >= 0 ? "warm" : "cold") + '" style="'
+        + "left:" + (50 + Math.min(0, c) * 50) + "%;width:"
+        + Math.max(0.8, Math.abs(c) * 50) + '%"></div></div>'
+      + '<div class="num">' + fmtSigned(a) + "</div>";
+    rows.appendChild(row);
+  }
 
-  const avg = HISTORY.slice(-12).reduce((s, h) => s + h.a, 0) / 12;
-  document.getElementById("avg12").textContent = "Ø 12 Monate " + fmt(avg) + " K";
+  const y12 = [];
+  for (let i = Math.max(0, last - 11); i <= last; i++) if (clim.anomNorm[i] !== null) y12.push(clim.anomNorm[i]);
+  $("avg12").textContent = "Ø 12 Monate " + fmtSigned(y12.length ? mean(y12) : 0) + " K";
 }
 
-/* ── 02 · Prognose ───────────────────────────────────────────── */
-
-function renderForecast() {
-  const box = document.getElementById("fcMonths");
+function renderForecast(fcMonths, clim) {
+  const box = $("fcMonths");
   box.innerHTML = "";
+  const SCALE = 3.5;
+  const pct = (v) => 50 + Math.max(-1, Math.min(1, v / SCALE)) * 50;
 
-  FORECAST.forEach((f) => {
-    const lo = clamp(f.lo, SCALE_FC), hi = clamp(f.hi, SCALE_FC), md = clamp(f.med, SCALE_FC);
-    const pct = (v) => 50 + v * 50;
-    const agree = Math.round((f.up / f.n) * 100);
+  for (const f of fcMonths) {
+    const norm = clim.normT[f.month];
+    if (Number.isNaN(norm)) continue;
+    const sorted = [...f.temps].sort((a, b) => a - b);
+    const med = quantile(sorted, 0.5) - norm;
+    const lo  = quantile(sorted, 0.1) - norm;
+    const hi  = quantile(sorted, 0.9) - norm;
+    const above = f.temps.filter((t) => t > norm).length;
+    const agree = Math.round((above / f.temps.length) * 100);
 
     const el = document.createElement("div");
     el.className = "m";
     el.innerHTML =
-      '<div class="mon">' + MON_LANG[f.m] + " " + f.y + "</div>"
-      + '<div class="val">' + fmt(f.med) + " K</div>"
+      '<div class="mon">' + MONL[f.month] + " " + f.year + "</div>"
+      + '<div class="val">' + fmtSigned(med) + " K</div>"
       + '<div class="unit">gegenüber normal</div>'
-      + '<div class="spread">'
-        + '<div class="zero"></div>'
+      + '<div class="spread"><div class="zero"></div>'
         + '<div class="line" style="left:' + pct(lo) + "%;width:" + (pct(hi) - pct(lo)) + '%"></div>'
         + '<div class="cap" style="left:' + pct(lo) + '%"></div>'
         + '<div class="cap" style="left:calc(' + pct(hi) + '% - 1.5px)"></div>'
-        + '<div class="med" style="left:calc(' + pct(md) + '% - 1.5px)"></div>'
-      + "</div>"
-      + '<div class="meta">Spanne ' + fmt(f.lo) + " bis " + fmt(f.hi) + " K"
-        + " · normal " + f.norm.toFixed(1).replace(".", ",") + " °C</div>"
+        + '<div class="med" style="left:calc(' + pct(med) + '% - 1.5px)"></div></div>'
+      + '<div class="meta">Spanne ' + fmtSigned(lo) + " bis " + fmtSigned(hi) + " K · normal "
+        + fmtNum(norm) + " °C</div>"
       + '<div class="agree"><div class="up" style="width:' + agree + '%"></div></div>'
-      + '<div class="meta">' + f.up + " von " + f.n + " Mitgliedern über dem Normalwert</div>";
+      + '<div class="meta">' + above + " von " + f.temps.length + " Mitgliedern über dem Normalwert</div>";
     box.appendChild(el);
-  });
+  }
 }
 
-/* ── 03 · Analogjahre ────────────────────────────────────────── */
-
-function renderAnalogs() {
-  const box = document.getElementById("analogs");
+function renderAnalogs(analogs, anchor) {
+  const box = $("analogs");
   box.innerHTML = "";
 
-  ANALOGS.forEach((a) => {
-    const c = clamp(a.after, 2);
+  const from = MON[idxMon(anchor - WIN_LEN + 1)], to = MON[idxMon(anchor)];
+  const lf = MON[idxMon(anchor + 1)], lt = MON[idxMon(anchor + LEAD_LEN)];
+  $("anaSub").innerHTML =
+    "Welche Jahre seit " + HIST_START + " hatten im Zeitraum <b>" + from + "–" + to
+    + "</b> ein ähnliches Temperaturmuster wie jetzt? Und wie lief es in diesen Jahren danach "
+    + "(<b>" + lf + "–" + lt + "</b>)? Alle Werte sind trendbereinigt — sonst würden schlicht "
+    + "immer die jüngsten Jahre gewinnen.";
+
+  const list = analogs.filter((a) => a.target !== null);
+  if (!list.length) {
+    box.innerHTML = '<div class="an"><div class="what">Keine vergleichbaren Jahre mit '
+                  + "vollständigen Folgedaten gefunden.</div></div>";
+    return;
+  }
+
+  for (const a of list) {
+    const c = Math.max(-1, Math.min(1, a.target / 2));
     const el = document.createElement("div");
     el.className = "an";
     el.innerHTML =
       '<div><div class="yr">' + a.year + '</div><div class="d">d = '
-        + a.d.toFixed(2).replace(".", ",") + "</div></div>"
-      + '<div class="what">Danach, August–Oktober: <b>' + fmt(a.after) + " K</b> "
-        + (a.after >= 0 ? "wärmer" : "kühler") + " als für dieses Jahr zu erwarten war</div>"
-      + '<div class="mini"><div class="b ' + (a.after >= 0 ? "warm" : "cold") + '" style="'
-        + "left:" + (50 + Math.min(0, c) * 50) + "%;"
-        + "width:" + Math.max(0.8, Math.abs(c) * 50) + '%"></div></div>';
+        + fmtNum(a.dist, 2) + "</div></div>"
+      + '<div class="what">Danach, ' + lf + "–" + lt + ": <b>" + fmtSigned(a.target)
+        + " K</b> " + (a.target >= 0 ? "wärmer" : "kühler") + " als für dieses Jahr zu erwarten war</div>"
+      + '<div class="mini"><div class="b ' + (a.target >= 0 ? "warm" : "cold") + '" style="'
+        + "left:" + (50 + Math.min(0, c) * 50) + "%;width:"
+        + Math.max(0.8, Math.abs(c) * 50) + '%"></div></div>';
     box.appendChild(el);
-  });
+  }
 }
 
-/* ── Ortsfeld (im Mockup ohne Funktion) ──────────────────────── */
+function renderValidation(v, anchor) {
+  const lf = MON[idxMon(anchor + 1)], lt = MON[idxMon(anchor + LEAD_LEN)];
 
-document.getElementById("go").addEventListener("click", () => {
-  const el = document.getElementById("coords");
-  el.textContent = "Mockup — die Ortssuche wird beim Anschluss der echten Daten aktiv.";
+  if (!v.ok) {
+    $("valTable").innerHTML = "";
+    $("valVerdict").innerHTML = '<div class="txt"><p>Zu wenige vollständige Jahre für eine '
+      + "belastbare Auswertung (" + v.n + " Fälle).</p></div>";
+    return;
+  }
+
+  $("valTable").innerHTML =
+    "<tr><th>Kennzahl</th><th style='text-align:right'>Wert</th></tr>"
+    + "<tr><td>Getestete Jahre</td><td class='n'>" + v.n + "</td></tr>"
+    + "<tr><td>Korrelation Vorhersage ↔ Realität</td><td class='n'>"
+      + (Number.isNaN(v.r) ? "—" : fmtNum(v.r, 2)) + "</td></tr>"
+    + "<tr><td>Mittlerer Fehler Analogverfahren</td><td class='n'>" + fmtNum(v.maeAnalog, 2) + " K</td></tr>"
+    + "<tr><td>Mittlerer Fehler „es wird normal“</td><td class='n'>" + fmtNum(v.maeClim, 2) + " K</td></tr>"
+    + "<tr class='accent'><td><b>Skill-Score gegenüber dieser Baseline</b></td><td class='n'>"
+      + fmtSigned(v.skill * 100, 0) + " %</td></tr>";
+
+  let txt;
+  if (v.skill > 0.10) {
+    txt = "<p><b>Das Verfahren schlägt die Baseline.</b> Für " + lf + "–" + lt
+        + " an diesem Ort ist der Jahresvergleich im Mittel um " + fmtNum(v.skill * 100, 0)
+        + " % genauer als die Annahme „es wird normal“. Das ist ein reales, aber kleines "
+        + "Signal — kein Grund, dem Ausblick Tagesgenauigkeit zuzutrauen.</p>";
+  } else if (v.skill > 0.02) {
+    txt = "<p><b>Grenzwertig.</b> Der Vorsprung vor der Baseline liegt bei nur "
+        + fmtNum(v.skill * 100, 0) + " % und ist bei " + v.n + " getesteten Jahren statistisch "
+        + "kaum von Zufall zu unterscheiden. Als Vorhersage würde ich mich darauf nicht stützen.</p>";
+  } else {
+    txt = "<p><b>Kein nachweisbarer Vorteil.</b> Der Jahresvergleich trifft " + lf + "–" + lt
+        + " an diesem Ort nicht besser als die Annahme „es wird normal“"
+        + (v.skill < 0 ? " — sondern schlechter" : "") + ".</p>"
+        + "<p>Genau dafür ist dieser Abschnitt da. Das Verfahren aus Abschnitt 05 sieht "
+        + "überzeugend aus, hält aber nicht, was die Optik verspricht. Die Analogjahre taugen "
+        + "als Illustration der Bandbreite — nicht als Prognose.</p>";
+  }
+  $("valVerdict").innerHTML =
+    '<svg class="icon lg" viewBox="0 0 24 24" aria-hidden="true">'
+    + '<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>'
+    + '<div class="txt">' + txt + "</div>";
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Ablauf
+   ═══════════════════════════════════════════════════════════════ */
+
+const setLoading = (t) => { $("loading").hidden = false; $("loadingText").textContent = t; };
+const clearLoading = () => { $("loading").hidden = true; };
+
+function showError(title, detail) {
+  const el = document.createElement("div");
+  el.className = "errbox";
+  el.innerHTML = "<b>" + title + "</b><code>" + String(detail).replace(/</g, "&lt;") + "</code>";
+  $("errors").appendChild(el);
+}
+
+let STATE = { days: null, calMonths: 6 };
+let busy = false;
+
+async function run(place) {
+  if (busy) return;
+  busy = true;
+  $("go").disabled = true;
+  $("errors").innerHTML = "";
+
+  $("coords").textContent = [place.name, place.admin, place.country].filter(Boolean).join(", ")
+    + " — " + fmtNum(place.lat, 3) + " °N " + fmtNum(place.lon, 3) + " °O";
+
+  try {
+    setLoading("Lade Messhistorie seit " + HIST_START + " — rund 28 000 Tageswerte …");
+    const [hist, fc] = await Promise.all([
+      fetchHistory(place.lat, place.lon),
+      fetchForecast(place.lat, place.lon).catch((e) => {
+        showError("16-Tage-Vorhersage nicht verfügbar — der Kalender zeigt "
+                + "durchgehend Erwartungswerte.", e.message);
+        return null;
+      }),
+    ]);
+
+    setLoading("Berechne Tagesklimatologie aus 75 Jahren …");
+    const year = new Date().getFullYear();
+    const doyClim = buildDoyClimatology(hist.daily, year);
+    const monthly = aggregateMonthly(hist.daily);
+    const clim = buildClimatology(monthly);
+
+    STATE.days = buildDaySeries(doyClim, fc, 13);
+    $("out").hidden = false;
+
+    renderCalendar(STATE.days, STATE.calMonths);
+    renderNextRain(STATE.days, !!fc);
+    renderWeeks(STATE.days);
+    renderRainStats(STATE.days, doyClim);
+    renderNow(monthly, clim);
+
+    let anchor = monthly.nMonths - 1;
+    while (anchor > 0 && (monthly.t[anchor] === null
+           || monthly.days[anchor] < monthly.expected[anchor] - 1)) anchor--;
+
+    setLoading("Suche vergleichbare Jahre und validiere das Verfahren …");
+    renderAnalogs(findAnalogs(clim.z, clim.anomDet, anchor, K_ANALOGS, true), anchor);
+    renderValidation(validate(clim.z, clim.anomDet, idxMon(anchor)), anchor);
+
+    setLoading("Lade Saisonprognose …");
+    try {
+      const seasonal = await fetchSeasonal(place.lat, place.lon);
+      const now = new Date();
+      const months = aggregateSeasonal(seasonal).filter((m) =>
+        m.year > now.getFullYear() || (m.year === now.getFullYear() && m.month >= now.getMonth()));
+      if (months.length) renderForecast(months, clim);
+      else { $("secFc").hidden = true; showError("Saisonprognose übersprungen",
+              "Die Antwort enthielt keine vollständigen Zukunftsmonate."); }
+    } catch (e) {
+      $("secFc").hidden = true;
+      showError("Saisonprognose nicht verfügbar — der Rest der Seite ist davon unberührt.", e.message);
+    }
+
+    clearLoading();
+    $("srcBadgeText").textContent = "Live-Daten · " + place.name;
+    try {
+      const u = new URL(location.href);
+      u.searchParams.set("ort", place.name);
+      history.replaceState(null, "", u);
+    } catch (_) { /* egal */ }
+
+  } catch (e) {
+    clearLoading();
+    showError("Daten konnten nicht geladen werden", e.message);
+  } finally {
+    busy = false;
+    $("go").disabled = false;
+  }
+}
+
+/* ── Bedienung ───────────────────────────────────────────────── */
+
+$("form").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const q = $("q").value.trim();
+  if (!q || busy) return;
+  $("go").disabled = true;
+  setLoading("Suche Ort …");
+  try {
+    const place = await geocode(q);
+    clearLoading();
+    $("go").disabled = false;
+    if (!place) { $("coords").textContent = "Kein Ort mit diesem Namen gefunden."; return; }
+    run(place);
+  } catch (e) {
+    clearLoading();
+    $("go").disabled = false;
+    showError("Ortssuche fehlgeschlagen", e.message);
+  }
 });
 
-renderHistory();
-renderForecast();
-renderAnalogs();
+function setCalMonths(n) {
+  STATE.calMonths = n;
+  $("cal6").setAttribute("aria-pressed", String(n === 6));
+  $("cal12").setAttribute("aria-pressed", String(n === 12));
+  if (STATE.days) renderCalendar(STATE.days, n);
+}
+$("cal6").addEventListener("click", () => setCalMonths(6));
+$("cal12").addEventListener("click", () => setCalMonths(12));
+
+(async function init() {
+  const q = new URLSearchParams(location.search).get("ort");
+  if (q) {
+    $("q").value = q;
+    try {
+      const p = await geocode(q);
+      if (p) return run(p);
+    } catch (_) { /* Standardort weiter unten */ }
+  }
+  run(DEFAULT_PLACE);
+})();
 </script>
 
 </body>
