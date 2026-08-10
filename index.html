@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Saisonausblick — ehrlicher Langfristausblick</title>
+<meta name="description" content="Saisonprognose-Modelldaten, eingeordnet in die Klimatologie des Orts, verglichen mit ähnlichen Jahren der Vergangenheit — und ehrlich nachgemessen, was das Verfahren wirklich taugt.">
+<style>
+  /* ═══════════════════════════════════════════════════════════
+     Design-Guideline: plain black & white, flat.
+     Keine Farben, keine Schatten, keine Verläufe, keine Radien.
+     Hierarchie entsteht ausschließlich über Linienstärke,
+     Flächenkontrast, Typo-Gewicht und Weißraum.
+     Warm = gefüllte Fläche · Kalt = Schraffur · Neutral = Kontur
+     ═══════════════════════════════════════════════════════════ */
+
+  :root {
+    --paper: #ffffff;
+    --ink:   #000000;
+    --mute:  #767676;
+    --line:  #000000;
+    --rule:  #d8d8d8;
+    --fill-soft: #f2f2f2;
+    --hatch: repeating-linear-gradient(
+               45deg, var(--ink) 0 1.5px, transparent 1.5px 5px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #000000;
+      --ink:   #ffffff;
+      --mute:  #9a9a9a;
+      --line:  #ffffff;
+      --rule:  #333333;
+      --fill-soft: #141414;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 940px; margin: 0 auto; padding: 0 24px; }
+
+  svg.icon {
+    width: 22px; height: 22px; flex: 0 0 auto;
+    fill: none; stroke: currentColor;
+    stroke-width: 1.5; stroke-linecap: square; stroke-linejoin: miter;
+  }
+  svg.icon.lg { width: 30px; height: 30px; stroke-width: 1.4; }
+  svg.icon.sm { width: 16px; height: 16px; stroke-width: 1.75; }
+
+  /* ── Kopf ────────────────────────────────────────────────── */
+
+  .topbar {
+    border-bottom: 2px solid var(--line);
+    padding: 18px 0;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand .mark {
+    width: 38px; height: 38px; border: 2px solid var(--line);
+    display: grid; place-items: center;
+  }
+  .brand .name {
+    font-size: 1rem; font-weight: 700;
+    letter-spacing: .14em; text-transform: uppercase;
+  }
+  .badge {
+    border: 1.5px solid var(--line); padding: 5px 11px;
+    font-size: .65rem; font-weight: 700;
+    letter-spacing: .16em; text-transform: uppercase;
+    display: flex; align-items: center; gap: 7px;
+  }
+
+  header.hero { padding: 64px 0 52px; border-bottom: 1px solid var(--rule); }
+  h1 {
+    font-size: clamp(2rem, 6vw, 3.4rem); line-height: 1.04;
+    letter-spacing: -.035em; font-weight: 800; margin: 0 0 22px; max-width: 17ch;
+  }
+  header.hero p.lead {
+    font-size: 1.06rem; color: var(--mute);
+    max-width: 56ch; margin: 0 0 34px;
+  }
+
+  .place {
+    display: flex; align-items: stretch; border: 2px solid var(--line);
+    max-width: 460px;
+  }
+  .place .pin { display: grid; place-items: center; padding: 0 14px; border-right: 2px solid var(--line); }
+  .place input {
+    flex: 1 1 auto; min-width: 0; border: none; outline: none; background: transparent;
+    color: var(--ink); font: inherit; font-size: 1rem; padding: 14px 12px;
+  }
+  .place input::placeholder { color: var(--mute); }
+  .place button {
+    border: none; border-left: 2px solid var(--line); cursor: pointer;
+    background: var(--ink); color: var(--paper);
+    font: inherit; font-size: .74rem; font-weight: 700;
+    letter-spacing: .13em; text-transform: uppercase; padding: 0 22px;
+  }
+  .place button:hover { background: var(--paper); color: var(--ink); }
+  .coords {
+    margin: 14px 0 0; font-size: .8rem; color: var(--mute);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Abschnitte ──────────────────────────────────────────── */
+
+  section { padding: 54px 0; border-bottom: 1px solid var(--rule); }
+  .sec-head { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 8px; }
+  .sec-head .num {
+    font-size: .7rem; font-weight: 700; letter-spacing: .1em;
+    border: 1.5px solid var(--line); padding: 3px 8px; margin-top: 5px;
+  }
+  h2 { font-size: 1.5rem; letter-spacing: -.02em; font-weight: 700; margin: 0; }
+  .sec-sub { color: var(--mute); font-size: .94rem; max-width: 68ch; margin: 0 0 30px 0; }
+  .stat-inline {
+    display: inline-flex; align-items: center; gap: 8px;
+    border: 1.5px solid var(--line); padding: 4px 11px;
+    font-size: .74rem; font-weight: 700; letter-spacing: .06em;
+    text-transform: uppercase; white-space: nowrap;
+  }
+
+  /* ── Balken: Anomalien ───────────────────────────────────── */
+
+  .chart { border: 2px solid var(--line); }
+  .chart .head {
+    display: grid; grid-template-columns: 104px 1fr 82px;
+    gap: 14px; padding: 11px 16px; border-bottom: 1.5px solid var(--line);
+    font-size: .64rem; font-weight: 700; letter-spacing: .13em; text-transform: uppercase;
+    color: var(--mute);
+  }
+  .chart .head span:last-child { text-align: right; }
+  .rows { padding: 6px 16px 14px; }
+  .row {
+    display: grid; grid-template-columns: 104px 1fr 82px;
+    gap: 14px; align-items: center; padding: 5px 0;
+    font-size: .86rem;
+  }
+  .row .lbl { color: var(--mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .row .num { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  .track { position: relative; height: 20px; border-left: 1px solid var(--rule); }
+  .track::before {
+    content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px;
+    width: 1px; background: var(--ink);
+  }
+  .track .b {
+    position: absolute; top: 3px; bottom: 3px;
+    border: 1.5px solid var(--ink);
+  }
+  .track .b.warm { background: var(--ink); }
+  .track .b.cold { background-image: var(--hatch); }
+
+  .axis {
+    display: flex; justify-content: space-between;
+    padding: 0 16px 12px; font-size: .68rem; color: var(--mute);
+    font-variant-numeric: tabular-nums;
+  }
+  .axis span:nth-child(2) { transform: translateX(-14px); }
+
+  .key {
+    display: flex; flex-wrap: wrap; gap: 22px; margin-top: 16px;
+    font-size: .76rem; color: var(--mute);
+  }
+  .key i { display: inline-block; width: 22px; height: 12px; border: 1.5px solid var(--ink); margin-right: 8px; vertical-align: -2px; }
+  .key i.warm { background: var(--ink); }
+  .key i.cold { background-image: var(--hatch); }
+  .key i.span { border: none; border-top: 1.5px solid var(--ink); height: 1px; margin-bottom: 5px; }
+
+  /* ── Prognosekarten ──────────────────────────────────────── */
+
+  .months { display: grid; gap: 0; grid-template-columns: repeat(auto-fill, minmax(212px, 1fr)); border: 2px solid var(--line); }
+  .m {
+    padding: 18px; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+  }
+  .m .mon {
+    font-size: .68rem; font-weight: 700; letter-spacing: .13em;
+    text-transform: uppercase; color: var(--mute); margin-bottom: 10px;
+  }
+  .m .val {
+    font-size: 2.1rem; font-weight: 800; letter-spacing: -.045em;
+    line-height: 1; font-variant-numeric: tabular-nums;
+  }
+  .m .unit {
+    font-size: .62rem; font-weight: 700; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--mute); margin-top: 6px; white-space: nowrap;
+  }
+  .m .spread {
+    margin-top: 14px; position: relative; height: 22px;
+    border-top: 1px solid var(--rule);
+  }
+  .m .spread .line { position: absolute; top: 10px; height: 1.5px; background: var(--ink); }
+  .m .spread .cap { position: absolute; top: 5px; width: 1.5px; height: 11px; background: var(--ink); }
+  .m .spread .med { position: absolute; top: 2px; width: 3px; height: 17px; background: var(--ink); }
+  .m .spread .zero { position: absolute; left: 50%; top: 4px; bottom: 0; width: 1px; background: var(--rule); }
+  .m .meta { font-size: .74rem; color: var(--mute); margin-top: 10px; font-variant-numeric: tabular-nums; }
+  .m .agree { display: flex; height: 6px; margin-top: 10px; border: 1.5px solid var(--ink); }
+  .m .agree .up { background: var(--ink); }
+
+  .note {
+    display: flex; gap: 13px; align-items: flex-start;
+    border: 1.5px solid var(--line); padding: 16px 18px; margin-top: 22px;
+    font-size: .87rem; background: var(--fill-soft);
+  }
+  .note b { font-weight: 700; }
+
+  /* ── Analogjahre ─────────────────────────────────────────── */
+
+  .analogs { border: 2px solid var(--line); }
+  .an {
+    display: grid; grid-template-columns: 96px 1fr 128px;
+    align-items: center; gap: 18px; padding: 15px 18px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .an:last-child { border-bottom: none; }
+  .an .yr { font-size: 1.45rem; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+  .an .d { font-size: .68rem; color: var(--mute); letter-spacing: .06em; font-variant-numeric: tabular-nums; }
+  .an .what { font-size: .87rem; color: var(--mute); }
+  .an .what b { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .an .mini { position: relative; height: 20px; border-left: 1px solid var(--rule); }
+  .an .mini::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--ink); }
+  .an .mini .b { position: absolute; top: 4px; bottom: 4px; border: 1.5px solid var(--ink); }
+  .an .mini .b.warm { background: var(--ink); }
+  .an .mini .b.cold { background-image: var(--hatch); }
+
+  /* ── Validierung ─────────────────────────────────────────── */
+
+  table {
+    width: 100%; border-collapse: collapse; font-size: .9rem;
+    border: 2px solid var(--line);
+  }
+  th, td { text-align: left; padding: 13px 18px; border-bottom: 1px solid var(--rule); }
+  th {
+    font-size: .64rem; font-weight: 700; letter-spacing: .13em;
+    text-transform: uppercase; color: var(--mute);
+    border-bottom: 1.5px solid var(--line);
+  }
+  td.n { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+  tr:last-child td { border-bottom: none; }
+  tr.accent td { background: var(--fill-soft); }
+
+  .verdict {
+    border: 2px solid var(--line); border-top: none;
+    padding: 20px; display: flex; gap: 15px; align-items: flex-start;
+  }
+  .verdict .txt { font-size: .93rem; }
+  .verdict .txt b { font-weight: 700; }
+  .verdict .txt p { margin: 0 0 9px; }
+  .verdict .txt p:last-child { margin: 0; }
+
+  /* ── Methodik ────────────────────────────────────────────── */
+
+  .grid2 { display: grid; gap: 0; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); border: 2px solid var(--line); }
+  .cell { padding: 22px; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+  .cell h3 {
+    font-size: .7rem; font-weight: 700; letter-spacing: .13em; text-transform: uppercase;
+    margin: 0 0 12px; display: flex; align-items: center; gap: 9px;
+  }
+  .cell p { margin: 0 0 10px; font-size: .87rem; color: var(--mute); }
+  .cell p:last-child { margin: 0; }
+  .cell ul { margin: 0; padding-left: 18px; font-size: .87rem; color: var(--mute); }
+  .cell li { margin: 6px 0; }
+  .cell b { color: var(--ink); font-weight: 600; }
+
+  footer {
+    padding: 40px 0 60px; font-size: .8rem; color: var(--mute);
+    display: flex; flex-wrap: wrap; gap: 10px 26px; align-items: center;
+  }
+  footer a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+
+  @media (max-width: 620px) {
+    .row, .chart .head { grid-template-columns: 78px 1fr 66px; gap: 10px; font-size: .8rem; }
+    .an { grid-template-columns: 70px 1fr; }
+    .an .mini { display: none; }
+    .topbar .badge { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- ═══ Kopfleiste ═══ -->
+  <div class="topbar">
+    <div class="brand">
+      <span class="mark">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 20h18M6 20V11M11 20V6M16 20v-6M21 20V9"/>
+        </svg>
+      </span>
+      <span class="name">Saisonausblick</span>
+    </div>
+    <span class="badge">
+      <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 3v18M3 12h18"/><path d="M5 5l14 14M19 5L5 19"/>
+      </svg>
+      Mockup — Beispieldaten
+    </span>
+  </div>
+
+  <!-- ═══ Hero ═══ -->
+  <header class="hero">
+    <h1>Was die Modelle für die nächsten Monate sagen</h1>
+    <p class="lead">
+      Echte Ensemble-Daten eines Saisonvorhersagemodells, eingeordnet in die Klimatologie
+      deines Orts. Dazu der Blick auf vergleichbare Jahre der Vergangenheit — und eine
+      ehrliche Messung, wie gut dieser Vergleich historisch wirklich funktioniert hat.
+    </p>
+
+    <div class="place">
+      <span class="pin">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/>
+          <circle cx="12" cy="10" r="2.5"/>
+        </svg>
+      </span>
+      <input type="search" id="q" value="Fulda" placeholder="Ort eingeben" autocomplete="off">
+      <button type="button" id="go">Laden</button>
+    </div>
+    <p class="coords" id="coords">Fulda, Hessen — 50,556 °N &nbsp; 9,681 °O &nbsp;·&nbsp; Rasterpunkt ERA5, ca. 25 km</p>
+  </header>
+
+  <!-- ═══ 01 · Aktuelle Lage ═══ -->
+  <section>
+    <div class="sec-head">
+      <span class="num">01</span>
+      <div>
+        <h2>Aktuelle Lage</h2>
+      </div>
+    </div>
+    <p class="sec-sub">
+      Abweichung der Monatsmitteltemperatur vom Normalwert 1991–2020, die letzten 14 Monate.
+      Das ist gemessene Historie aus der ERA5-Reanalyse — keine Prognose.
+      &nbsp;<span class="stat-inline" id="avg12">Ø 12 Monate +1,1 K</span>
+    </p>
+
+    <div class="chart">
+      <div class="head"><span>Monat</span><span>Abweichung vom Normalwert</span><span>Kelvin</span></div>
+      <div class="rows" id="histRows"></div>
+      <div class="axis"><span>−3 K</span><span>0</span><span>+3 K</span></div>
+    </div>
+
+    <div class="key">
+      <span><i class="warm"></i>wärmer als normal</span>
+      <span><i class="cold"></i>kälter als normal</span>
+    </div>
+  </section>
+
+  <!-- ═══ 02 · Saisonprognose ═══ -->
+  <section>
+    <div class="sec-head">
+      <span class="num">02</span>
+      <div><h2>Saisonprognose</h2></div>
+    </div>
+    <p class="sec-sub">
+      Monatsmittel aller 20 Ensemble-Mitglieder des Modells NOAA CFSv2, als Abweichung vom
+      Normalwert 1991–2020. Der Strich zeigt die Bandbreite des Ensembles, der Block den Median.
+      Je weiter in der Zukunft, desto breiter die Streuung — und desto weniger ist die Aussage wert.
+    </p>
+
+    <div class="months" id="fcMonths"></div>
+
+    <div class="key" style="margin-bottom:4px">
+      <span><i class="span"></i>Ensemble-Spanne 10.–90. Perzentil</span>
+      <span><i class="warm" style="width:5px"></i>Median</span>
+    </div>
+
+    <div class="note">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/>
+      </svg>
+      <div>
+        <b>Rohe Modellwerte, nicht bias-korrigiert.</b> Ein Teil der gezeigten Abweichung ist
+        systematischer Modellfehler, nicht Signal. Aussagekräftig sind vor allem die Richtung
+        und wie einig sich das Ensemble ist — nicht der genaue Betrag.
+        CFSv2 ist zudem nicht das beste verfügbare System; für Europa liefert ECMWF SEAS5
+        bessere Ergebnisse, ist aber nur mit Registrierung und als GRIB/NetCDF abrufbar.
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 03 · Vergleichbare Jahre ═══ -->
+  <section>
+    <div class="sec-head">
+      <span class="num">03</span>
+      <div><h2>Vergleichbare Jahre</h2></div>
+    </div>
+    <p class="sec-sub">
+      Welche Jahre seit 1950 hatten im Zeitraum Februar–Juli ein ähnliches Temperaturmuster
+      wie jetzt? Und wie lief es in diesen Jahren danach, im Zeitraum August–Oktober?
+      Alle Werte sind trendbereinigt — sonst würden schlicht immer die jüngsten Jahre gewinnen.
+    </p>
+
+    <div class="analogs" id="analogs"></div>
+
+    <div class="key">
+      <span><b style="color:var(--ink)">d</b>&nbsp;= Abstand im standardisierten Anomalie-Raum, kleiner heißt ähnlicher</span>
+    </div>
+  </section>
+
+  <!-- ═══ 04 · Validierung ═══ -->
+  <section>
+    <div class="sec-head">
+      <span class="num">04</span>
+      <div><h2>Wie verlässlich ist der Jahresvergleich?</h2></div>
+    </div>
+    <p class="sec-sub">
+      Nachgerechnet für jedes Jahr der Historie: Hätte man damals mit genau diesem Verfahren
+      die Folgemonate treffen können? Jede Vorhersage wird dabei nur aus den
+      <em>übrigen</em> Jahren gebildet und gegen die simpelste denkbare Alternative
+      verglichen — „es wird normal".
+    </p>
+
+    <table>
+      <tr><th>Kennzahl</th><th style="text-align:right">Wert</th></tr>
+      <tr><td>Getestete Jahre</td><td class="n">71</td></tr>
+      <tr><td>Korrelation Vorhersage ↔ Realität</td><td class="n">0,11</td></tr>
+      <tr><td>Mittlerer Fehler Analogverfahren</td><td class="n">0,78 K</td></tr>
+      <tr><td>Mittlerer Fehler „es wird normal"</td><td class="n">0,74 K</td></tr>
+      <tr class="accent"><td><b>Skill-Score gegenüber dieser Baseline</b></td><td class="n">−5 %</td></tr>
+    </table>
+
+    <div class="verdict">
+      <svg class="icon lg" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>
+      </svg>
+      <div class="txt">
+        <p><b>Kein nachweisbarer Vorteil.</b> Der Jahresvergleich trifft die Monate
+        August–Oktober an diesem Ort nicht besser als die Annahme „es wird normal" —
+        sondern minimal schlechter.</p>
+        <p>Genau dafür ist dieser Abschnitt da. Das Verfahren aus Abschnitt 03 sieht
+        überzeugend aus, hält aber nicht, was die Optik verspricht. Die Analogjahre
+        taugen als Illustration der Bandbreite — nicht als Prognose. Wer sie anders
+        verkauft, verkauft Zufall als Wissen.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 05 · Methodik ═══ -->
+  <section style="border-bottom:none">
+    <div class="sec-head">
+      <span class="num">05</span>
+      <div><h2>Methodik &amp; Grenzen</h2></div>
+    </div>
+    <p class="sec-sub">
+      Alles rechnet im Browser. Kein Backend, keine Cookies, kein Tracking,
+      keine gespeicherten Daten.
+    </p>
+
+    <div class="grid2">
+
+      <div class="cell">
+        <h3>
+          <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 6h16M4 12h16M4 18h10"/>
+          </svg>
+          Datenquellen
+        </h3>
+        <ul>
+          <li><b>Historie:</b> Open-Meteo Archive API auf Basis der ERA5-Reanalyse des ECMWF, Tageswerte ab 1950</li>
+          <li><b>Prognose:</b> Open-Meteo Seasonal API auf Basis von NOAA CFSv2</li>
+          <li><b>Ortssuche:</b> Open-Meteo Geocoding API</li>
+        </ul>
+        <p style="margin-top:10px">Alle drei kostenlos, ohne Schlüssel, direkt aus dem Browser nutzbar.</p>
+      </div>
+
+      <div class="cell">
+        <h3>
+          <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>
+          </svg>
+          Normalwerte &amp; Trend
+        </h3>
+        <p>Normalwert ist das Mittel 1991–2020, die WMO-Referenzperiode. Für den
+        Jahresvergleich wird zusätzlich <b>pro Kalendermonat ein linearer Trend abgezogen</b>.</p>
+        <p>Ohne diesen Schritt wären die ähnlichsten Jahre fast immer die jüngsten — schlicht
+        weil es wärmer geworden ist. Der Trend ist das stärkste Einzelsignal in den Daten,
+        aber er ist kein Wettermuster.</p>
+      </div>
+
+      <div class="cell">
+        <h3>
+          <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="3" y="3" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/>
+            <path d="M11 7h6v6"/>
+          </svg>
+          Analogverfahren
+        </h3>
+        <p>Verglichen werden die trendbereinigten, monatsweise standardisierten
+        Temperaturabweichungen der letzten sechs Monate mit demselben Zeitfenster jedes
+        anderen Jahres. Distanzmaß ist der mittlere quadratische Abstand.</p>
+        <p>Gezeigt werden die fünf ähnlichsten Jahre. Jahre mit weniger als zwei Jahren
+        Abstand zum Zielfenster fallen raus, damit sich die Fenster nicht überlappen.</p>
+      </div>
+
+      <div class="cell">
+        <h3>
+          <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>
+          </svg>
+          Validierung
+        </h3>
+        <p>Leave-one-out über alle Jahre: Für jedes Jahr wird die Vorhersage allein aus den
+        übrigen Jahren gebildet und mit dem tatsächlichen Verlauf verglichen.</p>
+        <p>Ein Skill-Score von <b>0</b> bedeutet: genauso gut wie „es wird normal".
+        Negativ bedeutet: schlechter als nichts tun.</p>
+      </div>
+
+      <div class="cell">
+        <h3>
+          <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3l9 16H3z"/><path d="M12 9v5M12 16.5h.01"/>
+          </svg>
+          Was das Tool nicht kann
+        </h3>
+        <ul>
+          <li>Kein Wetter für einen bestimmten Tag. Jenseits von etwa zwei Wochen ist
+            Tagesgenauigkeit physikalisch nicht erreichbar — wer sie anzeigt, rät.</li>
+          <li>Keine belastbaren Niederschlagsaussagen. Der saisonale Skill für Niederschlag
+            liegt in Mitteleuropa nahe null.</li>
+          <li>Keine lokalen Effekte. Ein 25-km-Rasterpunkt kennt weder Tallage
+            noch Stadtwärmeinsel.</li>
+        </ul>
+      </div>
+
+      <div class="cell">
+        <h3>
+          <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3v18M5 8h14M5 16h14"/>
+          </svg>
+          Warum überhaupt
+        </h3>
+        <p>Die Rohdaten der Saisonvorhersage sind gut, die Darstellung für Endnutzer ist es
+        nicht. Es gibt Fachkarten mit Terzil-Wahrscheinlichkeiten, die ohne Vorbildung
+        niemand liest — und „42-Tage-Trends", die tagesgenaue Temperaturen für in sechs
+        Wochen zeigen und damit eine Genauigkeit vortäuschen, die es nicht gibt.</p>
+        <p>Diese Seite versucht das Dazwischen: <b>ortsbezogen, mit Bandbreite,
+        und mit offengelegtem Skill.</b></p>
+      </div>
+
+    </div>
+  </section>
+
+  <footer>
+    <span>Daten: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> — ERA5 / ECMWF, NOAA CFSv2 — CC BY 4.0</span>
+    <span>Kein Tracking, kein Backend</span>
+  </footer>
+
+</div>
+
+<script>
+"use strict";
+
+/* ═══════════════════════════════════════════════════════════════
+   MOCKUP — statische Beispieldaten für Fulda.
+   Die Renderfunktionen sind bereits so geschnitten, dass sie
+   später unverändert mit echten API-Daten gefüttert werden können.
+   ═══════════════════════════════════════════════════════════════ */
+
+const MON = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
+const MON_LANG = ["Januar","Februar","März","April","Mai","Juni",
+                  "Juli","August","September","Oktober","November","Dezember"];
+
+// Gemessene Abweichung vom Normalwert 1991–2020, älteste zuerst
+const HISTORY = [
+  { y: 2025, m: 5,  a:  1.8 }, { y: 2025, m: 6,  a:  0.9 },
+  { y: 2025, m: 7,  a:  1.4 }, { y: 2025, m: 8,  a:  2.1 },
+  { y: 2025, m: 9,  a:  0.6 }, { y: 2025, m: 10, a: -0.4 },
+  { y: 2025, m: 11, a:  1.1 }, { y: 2026, m: 0,  a:  2.3 },
+  { y: 2026, m: 1,  a: -1.2 }, { y: 2026, m: 2,  a:  0.8 },
+  { y: 2026, m: 3,  a:  1.6 }, { y: 2026, m: 4,  a:  0.3 },
+  { y: 2026, m: 5,  a:  2.4 }, { y: 2026, m: 6,  a:  1.9 },
+];
+
+// Ensemble-Prognose: Median / 10. / 90. Perzentil der Abweichung, Mitglieder über Normal
+const FORECAST = [
+  { y: 2026, m: 7,  med: 1.2, lo:  0.1, hi: 2.3, up: 18, n: 20, norm: 18.0 },
+  { y: 2026, m: 8,  med: 0.9, lo: -0.2, hi: 2.0, up: 16, n: 20, norm: 13.9 },
+  { y: 2026, m: 9,  med: 0.7, lo: -0.8, hi: 2.1, up: 14, n: 20, norm:  9.6 },
+  { y: 2026, m: 10, med: 0.4, lo: -1.4, hi: 2.2, up: 12, n: 20, norm:  5.0 },
+  { y: 2026, m: 11, med: 0.6, lo: -1.9, hi: 2.9, up: 12, n: 20, norm:  2.0 },
+  { y: 2027, m: 0,  med: 0.3, lo: -2.6, hi: 3.1, up: 11, n: 20, norm:  1.0 },
+  { y: 2027, m: 1,  med: 0.5, lo: -2.4, hi: 3.3, up: 11, n: 20, norm:  1.6 },
+  { y: 2027, m: 2,  med: 0.8, lo: -1.6, hi: 2.9, up: 13, n: 20, norm:  4.8 },
+];
+
+// Ähnlichste Jahre und was in ihnen in den Folgemonaten passierte
+const ANALOGS = [
+  { year: 1959, d: 0.31, after:  0.9 },
+  { year: 2003, d: 0.38, after:  1.4 },
+  { year: 1976, d: 0.44, after: -0.3 },
+  { year: 2018, d: 0.47, after:  1.1 },
+  { year: 1994, d: 0.52, after:  0.2 },
+];
+
+const SCALE_HIST = 3;   // halber Vollausschlag der Balken in K
+const SCALE_FC   = 3.5;
+
+const fmt = (v, d = 1) => (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(d).replace(".", ",");
+const clamp = (v, s) => Math.max(-1, Math.min(1, v / s));
+
+/* ── 01 · Historie ───────────────────────────────────────────── */
+
+function renderHistory() {
+  const box = document.getElementById("histRows");
+  box.innerHTML = "";
+
+  [...HISTORY].reverse().forEach((h) => {
+    const c = clamp(h.a, SCALE_HIST);
+    const row = document.createElement("div");
+    row.className = "row";
+    row.innerHTML =
+      '<div class="lbl">' + MON[h.m] + " " + h.y + "</div>"
+      + '<div class="track"><div class="b ' + (h.a >= 0 ? "warm" : "cold") + '" style="'
+        + "left:" + (50 + Math.min(0, c) * 50) + "%;"
+        + "width:" + Math.max(0.8, Math.abs(c) * 50) + '%"></div></div>'
+      + '<div class="num">' + fmt(h.a) + "</div>";
+    box.appendChild(row);
+  });
+
+  const avg = HISTORY.slice(-12).reduce((s, h) => s + h.a, 0) / 12;
+  document.getElementById("avg12").textContent = "Ø 12 Monate " + fmt(avg) + " K";
+}
+
+/* ── 02 · Prognose ───────────────────────────────────────────── */
+
+function renderForecast() {
+  const box = document.getElementById("fcMonths");
+  box.innerHTML = "";
+
+  FORECAST.forEach((f) => {
+    const lo = clamp(f.lo, SCALE_FC), hi = clamp(f.hi, SCALE_FC), md = clamp(f.med, SCALE_FC);
+    const pct = (v) => 50 + v * 50;
+    const agree = Math.round((f.up / f.n) * 100);
+
+    const el = document.createElement("div");
+    el.className = "m";
+    el.innerHTML =
+      '<div class="mon">' + MON_LANG[f.m] + " " + f.y + "</div>"
+      + '<div class="val">' + fmt(f.med) + " K</div>"
+      + '<div class="unit">gegenüber normal</div>'
+      + '<div class="spread">'
+        + '<div class="zero"></div>'
+        + '<div class="line" style="left:' + pct(lo) + "%;width:" + (pct(hi) - pct(lo)) + '%"></div>'
+        + '<div class="cap" style="left:' + pct(lo) + '%"></div>'
+        + '<div class="cap" style="left:calc(' + pct(hi) + '% - 1.5px)"></div>'
+        + '<div class="med" style="left:calc(' + pct(md) + '% - 1.5px)"></div>'
+      + "</div>"
+      + '<div class="meta">Spanne ' + fmt(f.lo) + " bis " + fmt(f.hi) + " K"
+        + " · normal " + f.norm.toFixed(1).replace(".", ",") + " °C</div>"
+      + '<div class="agree"><div class="up" style="width:' + agree + '%"></div></div>'
+      + '<div class="meta">' + f.up + " von " + f.n + " Mitgliedern über dem Normalwert</div>";
+    box.appendChild(el);
+  });
+}
+
+/* ── 03 · Analogjahre ────────────────────────────────────────── */
+
+function renderAnalogs() {
+  const box = document.getElementById("analogs");
+  box.innerHTML = "";
+
+  ANALOGS.forEach((a) => {
+    const c = clamp(a.after, 2);
+    const el = document.createElement("div");
+    el.className = "an";
+    el.innerHTML =
+      '<div><div class="yr">' + a.year + '</div><div class="d">d = '
+        + a.d.toFixed(2).replace(".", ",") + "</div></div>"
+      + '<div class="what">Danach, August–Oktober: <b>' + fmt(a.after) + " K</b> "
+        + (a.after >= 0 ? "wärmer" : "kühler") + " als für dieses Jahr zu erwarten war</div>"
+      + '<div class="mini"><div class="b ' + (a.after >= 0 ? "warm" : "cold") + '" style="'
+        + "left:" + (50 + Math.min(0, c) * 50) + "%;"
+        + "width:" + Math.max(0.8, Math.abs(c) * 50) + '%"></div></div>';
+    box.appendChild(el);
+  });
+}
+
+/* ── Ortsfeld (im Mockup ohne Funktion) ──────────────────────── */
+
+document.getElementById("go").addEventListener("click", () => {
+  const el = document.getElementById("coords");
+  el.textContent = "Mockup — die Ortssuche wird beim Anschluss der echten Daten aktiv.";
+});
+
+renderHistory();
+renderForecast();
+renderAnalogs();
+</script>
+
+</body>
+</html>
