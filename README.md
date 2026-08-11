@@ -17,6 +17,10 @@ den Open-Meteo-APIs geladen und im Browser ausgewertet.
 
 ## Aufbau der Seite
 
+Ganz oben steht vor allen Abschnitten eine **Kurzantwort**: Temperaturtendenz
+der nächsten 30 Tage, nächster Regentag, mittlerer Fehler des Modells im
+Rückblick — drei Zahlen mit Sprungmarke in den jeweiligen Abschnitt.
+
 | # | Abschnitt | Inhalt |
 |---|-----------|--------|
 | 01 | Tageskalender | Echte 16-Tage-Vorhersage, danach der Best Guess: Klimawert des Kalendertags, verschoben um die aktuellen Tendenzen |
@@ -70,6 +74,10 @@ keine Eckenradien. Hierarchie entsteht ausschließlich über Linienstärke,
 Flächenkontrast, Typo-Gewicht und Weißraum.
 
 - **Warm** = gefüllte Fläche · **Kalt** = Schraffur · **Neutral** = Kontur
+- Große Type gibt es nur einmal — in der Kurzantwort. Die Kennzahlenzeilen der
+  Abschnitte ordnen sich darunter ein
+- Temperaturabweichungen stehen in **Grad Celsius**, nicht in Kelvin; bei
+  Differenzen ist beides dasselbe, nur versteht das eine jeder
 - Icons ausschließlich als Inline-SVG, Strichstärke 1,5 px, keine Füllung
 - Tooltips sind eigene Elemente statt `title` — Kopfzeile, Wertzeilen und
   optional ein Abweichungsbalken, im selben Schwarzweiß wie der Rest

@@ -131,9 +131,53 @@
   .errbox b { display: block; margin-bottom: 5px; }
   .errbox code { font-size: .85em; color: var(--mute); word-break: break-word; }
 
+  /* ── Kurzantwort ─────────────────────────────────────────── */
+
+  /* Der einzige Block der Seite mit großer Type. Alles andere ordnet sich
+     darunter ein — sonst konkurrieren drei Kästen um dieselbe Rolle. */
+  .answer { border: 2px solid var(--line); margin: 34px 0 0; }
+  .answer .ah {
+    background: var(--ink); color: var(--paper); padding: 9px 16px;
+    display: flex; justify-content: space-between; align-items: baseline; gap: 14px;
+    font-size: .63rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
+  }
+  .answer .ah .where { font-weight: 400; letter-spacing: .1em; }
+  /* 1 px Raster über die Hintergrundfarbe: trennt die Spalten in jeder
+     Umbruchlage, ob nebeneinander oder gestapelt. */
+  .answer .acols {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 1px; background: var(--rule);
+  }
+  .answer .acol {
+    display: flex; flex-direction: column; padding: 22px 18px 20px;
+    color: inherit; text-decoration: none; background: var(--paper);
+  }
+  .answer .acol:hover, .answer .acol:focus-visible { background: var(--fill-soft); outline: none; }
+  .answer .acol:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+  .answer .lbl {
+    display: block; font-size: .62rem; font-weight: 700; letter-spacing: .13em;
+    text-transform: uppercase; color: var(--mute); margin-bottom: 10px;
+  }
+  .answer .big {
+    display: block; font-size: 1.7rem; font-weight: 800;
+    letter-spacing: -.035em; line-height: 1.06;
+  }
+  /* wächst, damit die drei Sprungmarken unten auf einer Linie sitzen */
+  .answer .sub { flex: 1 1 auto; margin-top: 9px; font-size: .8rem; color: var(--mute); }
+  .answer .go {
+    display: inline-flex; align-items: center; gap: 7px; align-self: flex-start;
+    margin-top: 14px;
+    font-size: .63rem; font-weight: 700; letter-spacing: .11em; text-transform: uppercase;
+    border-bottom: 1.5px solid var(--ink); padding-bottom: 2px;
+  }
+  .answer .acol:hover .go { background: var(--ink); color: var(--paper); }
+
   /* ── Abschnitte ──────────────────────────────────────────── */
 
-  section { padding: 54px 0; border-bottom: 1px solid var(--rule); }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+  section { padding: 54px 0; border-bottom: 1px solid var(--rule); scroll-margin-top: 16px; }
   .sec-head { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 8px; }
   .sec-head .num {
     font-size: .7rem; font-weight: 700; letter-spacing: .1em;
@@ -354,14 +398,15 @@
 
   /* ── Regenverlauf ────────────────────────────────────────── */
 
-  .next-rain {
-    border: 2px solid var(--line); padding: 20px 22px; margin-bottom: 24px;
-    display: flex; flex-wrap: wrap; gap: 22px; align-items: baseline;
+  /* Kennzahlenzeile eines Abschnitts — bewusst ohne große Type, die
+     gehört der Kurzantwort ganz oben. */
+  .panel {
+    border: 2px solid var(--line); padding: 18px 22px; margin-bottom: 24px;
+    display: flex; flex-wrap: wrap; gap: 20px 30px; align-items: baseline;
   }
-  .next-rain .big { font-size: 2rem; font-weight: 800; letter-spacing: -.03em; line-height: 1; }
-  .next-rain .lbl { font-size: .64rem; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--mute); display: block; margin-bottom: 7px; }
-  .next-rain .col { min-width: 120px; }
-  .next-rain .col .v { font-size: 1.05rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .panel .lbl { font-size: .62rem; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--mute); display: block; margin-bottom: 6px; }
+  .panel .col { min-width: 118px; }
+  .panel .col .v { font-size: 1.05rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 
   .weeks { border: 2px solid var(--line); padding: 18px 16px 12px; }
   .weekbars { display: flex; align-items: flex-end; gap: 2px; height: 116px; }
@@ -451,7 +496,7 @@
     .an .mini { display: none; }
     .topbar .badge { display: none; }
     .cal-months { grid-template-columns: 1fr; }
-    .next-rain { gap: 18px; }
+    .panel { gap: 16px 22px; }
     th, td { padding: 10px 11px; font-size: .82rem; }
     .retro { padding: 14px 12px 10px; }
     .lane .bars { gap: 0; height: 62px; }
@@ -507,6 +552,9 @@
 
   <main id="out" hidden>
 
+    <!-- ═══ Kurzantwort — die drei Fakten, bevor die Rechnung anfängt ═══ -->
+    <div class="answer" id="answer" hidden></div>
+
     <!-- ═══ 01 · Tageskalender ═══ -->
     <section id="secCal">
       <div class="sec-head">
@@ -523,7 +571,7 @@
         was es über die gesamte Historie taugt, in Abschnitt 07.
       </p>
 
-      <div class="next-rain" id="guessPanel"></div>
+      <div class="panel" id="guessPanel"></div>
 
       <div class="cal-controls">
         <button class="chip" id="cal6" aria-pressed="true" type="button">6 Monate</button>
@@ -571,7 +619,7 @@
         Vorhersage — den reinen Klimawert des Kalendertags.
       </p>
 
-      <div class="next-rain" id="retroPanel"></div>
+      <div class="panel" id="retroPanel"></div>
 
       <div class="retro" id="retroStrip"></div>
 
@@ -596,7 +644,7 @@
         Verlauf der Regenwahrscheinlichkeit über das kommende Jahr, Woche für Woche.
       </p>
 
-      <div class="next-rain" id="nextRain"></div>
+      <div class="panel" id="nextRain"></div>
 
       <div class="weeks">
         <div class="wk-scale"><span>Regenwahrscheinlichkeit pro Woche</span><span id="wkMax">100 %</span></div>
@@ -625,7 +673,7 @@
       </p>
 
       <div class="chart">
-        <div class="head"><span>Monat</span><span>Abweichung vom Normalwert</span><span>Kelvin</span></div>
+        <div class="head"><span>Monat</span><span>Abweichung vom Normalwert</span><span>Grad</span></div>
         <div class="rows" id="histRows"></div>
         <div class="axis" id="histAxis"></div>
       </div>
@@ -756,7 +804,7 @@
             <li><b>Ähnliche Jahre:</b> wie die fünf Analogjahre an genau diesem Kalendertag
               verliefen, gewichtet nach Ähnlichkeit</li>
           </ul>
-          <p>Die Gesamtverschiebung ist auf ±3 K gedeckelt. Beim Niederschlag fließt nur die
+          <p>Die Gesamtverschiebung ist auf ±3 °C gedeckelt. Beim Niederschlag fließt nur die
           Analog-Komponente ein, weil das Saisonmodell dafür praktisch keinen Skill hat.</p>
         </div>
 
@@ -770,6 +818,8 @@
           <p>Ohne diesen Schritt wären die ähnlichsten Jahre fast immer die jüngsten — schlicht
           weil es wärmer geworden ist. Der Trend ist das stärkste Einzelsignal in den Daten,
           aber er ist kein Wettermuster.</p>
+          <p>Alle Abweichungen stehen in <b>Grad Celsius</b>. Bei Temperatur<em>differenzen</em>
+          ist das dasselbe wie Kelvin — nur versteht es jeder.</p>
         </div>
 
         <div class="cell">
@@ -1753,6 +1803,75 @@ window.addEventListener("resize", hideTip);
    Darstellung
    ═══════════════════════════════════════════════════════════════ */
 
+/**
+ * Die drei Fakten, die jemand sucht, bevor er irgendetwas nachrechnen will:
+ * Wird es warm, wann regnet es, und kann man dem Ding trauen. Alle drei
+ * Zahlen stehen weiter unten im Detail — hier stehen sie nebeneinander und
+ * führen per Sprungmarke dorthin.
+ */
+function renderAnswer(days, retro, hasForecast, place) {
+  const box = $("answer");
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const cols = [];
+
+  const arrow = '<svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true" '
+              + 'style="width:13px;height:13px"><path d="M5 12h13M13 6l6 6-6 6"/></svg>';
+  const col = (href, lbl, big, sub, go) =>
+    '<a class="acol" href="' + href + '"><span class="lbl">' + lbl + "</span>"
+    + '<span class="big">' + big + "</span>"
+    + '<span class="sub">' + sub + "</span>"
+    + '<span class="go">' + go + arrow + "</span></a>";
+
+  /* 1 · Temperatur der nächsten 30 Tage gegen den Klimawert derselben Tage.
+        Die echte Vorhersage zählt mit — sie ist die beste Information, die da ist. */
+  const next30 = days.filter((d) => !d.past && d.tmax !== null && d.climTmax !== null)
+                     .slice(0, 30);
+  if (next30.length >= 20) {
+    const got = mean(next30.map((d) => d.tmax));
+    const usual = mean(next30.map((d) => d.climTmax));
+    const diff = got - usual;
+    const big = Math.abs(diff) < 0.3
+      ? "ungefähr wie üblich"
+      : fmtNum(Math.abs(diff)) + " °C " + (diff > 0 ? "wärmer" : "kühler");
+    cols.push(col("#secCal", "Die nächsten 30 Tage", big,
+      "Ø " + fmtNum(got) + " °C am Tag, üblich sind " + fmtNum(usual) + " °C",
+      "Zum Kalender"));
+  }
+
+  /* 2 · Nächster Regentag — nur aus der echten Vorhersage, nie aus der Statistik. */
+  const fcDays = days.filter((d) => d.source === "fc" && d.date >= today);
+  const wet = fcDays.find((d) => d.wet);
+  if (wet) {
+    const inDays = Math.round((wet.date - today) / 86400000);
+    cols.push(col("#secRain", "Nächster Regen",
+      inDays === 0 ? "heute" : inDays === 1 ? "morgen" : DOWL[dowMon(wet.date)],
+      wet.date.getDate() + ". " + MONL[wet.date.getMonth()]
+        + (wet.prec === null ? "" : " · " + fmtNum(wet.prec) + " mm erwartet"),
+      "Zum Regenverlauf"));
+  } else if (hasForecast && fcDays.length) {
+    cols.push(col("#secRain", "Nächster Regen", "nicht in Sicht",
+      "in den nächsten " + fcDays.length + " Tagen Vorhersage kein Regentag",
+      "Zum Regenverlauf"));
+  }
+
+  /* 3 · Was das Verfahren zuletzt getaugt hat. */
+  if (retro && retro.ok && retro.head) {
+    const h = retro.head;
+    cols.push(col("#secRetro", "So gut lag das Modell zuletzt",
+      fmtNum(h.maeM) + " °C daneben",
+      "im Mittel, " + h.lead + " Tage im Voraus · reine Statistik: "
+        + fmtNum(h.maeC) + " °C",
+      "Zum Rückblick"));
+  }
+
+  if (!cols.length) { box.hidden = true; return; }
+  box.hidden = false;
+  box.innerHTML =
+    '<div class="ah"><span>Kurz gesagt</span><span class="where">'
+    + escAttr(place.name) + "</span></div>"
+    + '<div class="acols">' + cols.join("") + "</div>";
+}
+
 function renderCalendar(days, months) {
   const box = $("calMonths");
   box.innerHTML = "";
@@ -1822,12 +1941,12 @@ function renderCalendar(days, months) {
         if (r.prec !== null) pastRows.push(["Niederschlag", fmtNum(r.prec) + " mm"]);
         if (g) {
           pastRows.push(["Best Guess", fmtNum(g.model) + " °C"]);
-          pastRows.push(["Abweichung", fmtSigned(g.errM) + " K"]);
+          pastRows.push(["Abweichung", fmtSigned(g.errM) + " °C"]);
           pastRows.push(["Reine Klimatologie",
-                         fmtNum(r.clim) + " °C · " + fmtSigned(g.errC) + " K", "mute"]);
+                         fmtNum(r.clim) + " °C · " + fmtSigned(g.errC) + " °C", "mute"]);
         }
         cell.dataset.tip = tipHTML(dayHead, "gemessen", pastRows, g ? {
-          bar: { value: g.errM, max: 6, unit: "K" },
+          bar: { value: g.errM, max: 6, unit: "°C" },
           note: "Best Guess gerechnet am Stichtag " + RETRO_LEAD + " Tage davor. Der Balken "
               + "in der Zelle zeigt dieselbe Abweichung: nach rechts zu warm, nach links "
               + "zu kalt gerechnet.",
@@ -1865,7 +1984,7 @@ function renderCalendar(days, months) {
         const rows = [["Erwarteter Höchstwert", temp]];
         if (d.adj) {
           rows.push(["davon Klimawert", fmtNum(d.climTmax) + " °C", "mute"]);
-          rows.push(["davon aktuelle Tendenz", fmtSigned(d.adj.dT) + " K"]);
+          rows.push(["davon aktuelle Tendenz", fmtSigned(d.adj.dT) + " °C"]);
         }
         rows.push(["Nasse Jahre", Math.round(prob * 100) + " %"]);
         rows.push(["Datenbasis", fmtInt(d.clim ? d.clim.n : 0) + " Messtage", "mute"]);
@@ -1901,7 +2020,7 @@ function renderNextRain(days, hasForecast) {
     const inDays = Math.round((next.date - today) / 86400000);
     html =
       '<div class="col"><span class="lbl">Nächster Regentag</span>'
-      + '<div class="big">' + (inDays === 0 ? "heute" : inDays === 1 ? "morgen"
+      + '<div class="v">' + (inDays === 0 ? "heute" : inDays === 1 ? "morgen"
           : "in " + inDays + " Tagen") + "</div></div>"
       + '<div class="col"><span class="lbl">Termin</span><div class="v">'
       + DOWL[dowMon(next.date)] + ", " + next.date.getDate() + ". "
@@ -1917,14 +2036,14 @@ function renderNextRain(days, hasForecast) {
       ? mean(after.filter((d) => d.rainProb !== null).map((d) => d.rainProb)) : NaN;
     html =
       '<div class="col"><span class="lbl">Nächster Regentag</span>'
-      + '<div class="big">nicht in Sicht</div></div>'
+      + '<div class="v">nicht in Sicht</div></div>'
       + '<div class="col"><span class="lbl">Vorhersagereichweite</span><div class="v">'
       + horizon + " Tage trocken</div></div>"
       + '<div class="col"><span class="lbl">Danach statistisch</span><div class="v">'
       + (Number.isNaN(avgProb) ? "—" : Math.round(avgProb * 100) + " % pro Tag") + "</div></div>";
   } else {
     html = '<div class="col"><span class="lbl">Nächster Regentag</span>'
-         + '<div class="big">—</div></div>'
+         + '<div class="v">—</div></div>'
          + '<div class="col"><span class="lbl">Hinweis</span><div class="v">'
          + "Vorhersage nicht verfügbar</div></div>";
   }
@@ -2019,7 +2138,7 @@ function renderNow(monthly, clim) {
   const vals = [];
   for (let i = first; i <= last; i++) if (clim.anomNorm[i] !== null) vals.push(Math.abs(clim.anomNorm[i]));
   const scale = Math.max(2, Math.ceil(Math.max(...vals, 1)));
-  $("histAxis").innerHTML = "<span>−" + scale + " K</span><span>0</span><span>+" + scale + " K</span>";
+  $("histAxis").innerHTML = "<span>−" + scale + " °C</span><span>0</span><span>+" + scale + " °C</span>";
 
   for (let i = last; i >= first; i--) {
     const a = clim.anomNorm[i];
@@ -2039,7 +2158,11 @@ function renderNow(monthly, clim) {
 
   const y12 = [];
   for (let i = Math.max(0, last - 11); i <= last; i++) if (clim.anomNorm[i] !== null) y12.push(clim.anomNorm[i]);
-  $("avg12").textContent = "Ø 12 Monate " + fmtSigned(y12.length ? mean(y12) : 0) + " K";
+  const v12 = y12.length ? mean(y12) : 0;
+  $("avg12").textContent = Math.abs(v12) < 0.15
+    ? "12 Monate im Mittel wie normal"
+    : "12 Monate im Mittel " + fmtNum(Math.abs(v12)) + " °C "
+      + (v12 > 0 ? "wärmer" : "kühler");
 }
 
 function renderForecast(fcMonths, clim) {
@@ -2062,14 +2185,15 @@ function renderForecast(fcMonths, clim) {
     el.className = "m";
     el.innerHTML =
       '<div class="mon">' + MONL[f.month] + " " + f.year + "</div>"
-      + '<div class="val">' + fmtSigned(med) + " K</div>"
-      + '<div class="unit">gegenüber normal</div>'
+      + '<div class="val">' + fmtNum(Math.abs(med)) + " °C</div>"
+      + '<div class="unit">' + (Math.abs(med) < 0.15 ? "wie normal"
+          : med > 0 ? "wärmer als normal" : "kälter als normal") + "</div>"
       + '<div class="spread"><div class="zero"></div>'
         + '<div class="line" style="left:' + pct(lo) + "%;width:" + (pct(hi) - pct(lo)) + '%"></div>'
         + '<div class="cap" style="left:' + pct(lo) + '%"></div>'
         + '<div class="cap" style="left:calc(' + pct(hi) + '% - 1.5px)"></div>'
         + '<div class="med" style="left:calc(' + pct(med) + '% - 1.5px)"></div></div>'
-      + '<div class="meta">Spanne ' + fmtSigned(lo) + " bis " + fmtSigned(hi) + " K · normal "
+      + '<div class="meta">Spanne ' + fmtSigned(lo) + " bis " + fmtSigned(hi) + " °C · normal "
         + fmtNum(norm) + " °C</div>"
       + '<div class="agree"><div class="up" style="width:' + agree + '%"></div></div>'
       + '<div class="meta">' + above + " von " + f.temps.length + " Mitgliedern über dem Normalwert</div>";
@@ -2104,7 +2228,7 @@ function renderAnalogs(analogs, anchor) {
       '<div><div class="yr">' + a.year + '</div><div class="d">d = '
         + fmtNum(a.dist, 2) + "</div></div>"
       + '<div class="what">Danach, ' + lf + "–" + lt + ": <b>" + fmtSigned(a.target)
-        + " K</b> " + (a.target >= 0 ? "wärmer" : "kühler") + " als für dieses Jahr zu erwarten war</div>"
+        + " °C</b> " + (a.target >= 0 ? "wärmer" : "kühler") + " als für dieses Jahr zu erwarten war</div>"
       + '<div class="mini"><div class="b ' + (a.target >= 0 ? "warm" : "cold") + '" style="'
         + "left:" + (50 + Math.min(0, c) * 50) + "%;width:"
         + Math.max(0.8, Math.abs(c) * 50) + '%"></div></div>';
@@ -2132,12 +2256,12 @@ function renderValidation(v, anchor) {
     "<tr><th>Verfahren</th><th style='text-align:right'>Mittlerer Fehler</th>"
     + "<th style='text-align:right'>Korrelation</th><th style='text-align:right'>Skill</th></tr>"
     + "<tr><td>Klimatologie („es wird normal“)</td><td class='n'>"
-      + fmtNum(v.maeClim, 2) + " K</td><td class='n'>—</td><td class='n'>0 %</td></tr>";
+      + fmtNum(v.maeClim, 2) + " °C</td><td class='n'>—</td><td class='n'>0 %</td></tr>";
 
   for (const k of ["pers", "ana", "combo"]) {
     rows += "<tr" + (k === v.best ? " class='accent'" : "") + "><td>"
       + (k === v.best ? "<b>" + PRED_LABEL[k] + "</b>" : PRED_LABEL[k]) + "</td>"
-      + "<td class='n'>" + fmtNum(v[k].mae, 2) + " K</td>"
+      + "<td class='n'>" + fmtNum(v[k].mae, 2) + " °C</td>"
       + "<td class='n'>" + (Number.isNaN(v[k].r) ? "—" : fmtNum(v[k].r, 2)) + "</td>"
       + "<td class='n'>" + fmtSigned(v[k].skill * 100, 0) + " %</td></tr>";
   }
@@ -2191,8 +2315,8 @@ function errorLane(title, note, days, pick, scale, klass, kind, lead) {
       [["Gemessen", fmtNum(r.obs) + " °C"],
        [kind === "Klimatologie" ? "Klimawert" : "Best Guess",
         fmtNum(r.obs + e) + " °C"],
-       ["Abweichung", fmtSigned(e) + " K"]],
-      { bar: { value: e, max: scale, unit: "K" },
+       ["Abweichung", fmtSigned(e) + " °C"]],
+      { bar: { value: e, max: scale, unit: "°C" },
         note: kind === "Klimatologie"
           ? "Der reine Klimawert dieses Kalendertags — die Vergleichslatte."
           : "Gerechnet am Stichtag " + lead + " Tage davor, ohne jede spätere Information." });
@@ -2203,7 +2327,7 @@ function errorLane(title, note, days, pick, scale, klass, kind, lead) {
     + '<div class="cap"><span>' + title + "</span><em>" + note + "</em></div>"
     + '<div class="bars">' + bars + "</div>"
     + '<div class="scale"><span>' + dmy(days[0].date) + "</span>"
-    + "<span>Skala ± " + fmtNum(scale, 0) + " K</span>"
+    + "<span>Skala ± " + fmtNum(scale, 0) + " °C</span>"
     + "<span>" + dmy(days[days.length - 1].date) + "</span></div></div>";
 }
 
@@ -2217,9 +2341,9 @@ function renderRetro(retro) {
 
   $("retroPanel").innerHTML =
     '<div class="col"><span class="lbl">Mittlerer Fehler, ' + h.lead + ' Tage Vorlauf</span>'
-    + '<div class="big">' + fmtNum(h.maeM) + " K</div></div>"
+    + '<div class="v">' + fmtNum(h.maeM) + " °C</div></div>"
     + '<div class="col"><span class="lbl">Reine Klimatologie</span><div class="v">'
-      + fmtNum(h.maeC) + " K</div></div>"
+      + fmtNum(h.maeC) + " °C</div></div>"
     + '<div class="col"><span class="lbl">Vorsprung</span><div class="v">'
       + fmtSigned(h.skill * 100, 0) + " %</div></div>"
     + '<div class="col"><span class="lbl">Näher dran an</span><div class="v">'
@@ -2237,10 +2361,10 @@ function renderRetro(retro) {
 
   $("retroStrip").innerHTML =
     errorLane("Best Guess · " + h.lead + " Tage Vorlauf",
-              "Ø " + fmtNum(h.maeM) + " K",
+              "Ø " + fmtNum(h.maeM) + " °C",
               shown, (r) => r.byLead.get(h.lead).errM, scale, "", "Best Guess", h.lead)
     + errorLane("Reine Klimatologie · derselbe Zeitraum",
-                "Ø " + fmtNum(h.maeC) + " K",
+                "Ø " + fmtNum(h.maeC) + " °C",
                 shown, (r) => r.byLead.get(h.lead).errC, scale, "clim", "Klimatologie", h.lead);
 
   let rows = "<tr><th>Vorlauf</th><th>Best Guess</th><th>Klimatologie</th>"
@@ -2248,8 +2372,8 @@ function renderRetro(retro) {
   for (const s of retro.stats) {
     rows += "<tr" + (s.lead === h.lead ? ' class="accent"' : "") + ">"
       + "<td>" + s.lead + " Tage</td>"
-      + '<td class="n">' + fmtNum(s.maeM) + " K</td>"
-      + '<td class="n">' + fmtNum(s.maeC) + " K</td>"
+      + '<td class="n">' + fmtNum(s.maeM) + " °C</td>"
+      + '<td class="n">' + fmtNum(s.maeC) + " °C</td>"
       + '<td class="n">' + fmtSigned(s.skill * 100, 0) + " %</td>"
       + '<td class="n">' + Math.round(s.better * 100) + " %</td>"
       + '<td class="n">' + (Number.isNaN(s.bss) ? "—" : fmtSigned(s.bss * 100, 0) + " %")
@@ -2262,25 +2386,25 @@ function renderRetro(retro) {
   if (h.skill > 0.05) {
     txt = "<p><b>Der Best Guess lag im Prüfzeitraum vorn.</b> Bei " + h.lead
         + " Tagen Vorlauf verfehlte er die gemessene Tageshöchsttemperatur im Mittel um "
-        + fmtNum(h.maeM) + " K, die reine Klimatologie um " + fmtNum(h.maeC) + " K — "
+        + fmtNum(h.maeM) + " °C, die reine Klimatologie um " + fmtNum(h.maeC) + " °C — "
         + fmtNum(h.skill * 100, 0) + " % weniger Fehler, und an " + Math.round(h.better * 100)
         + " % der Tage war er näher dran.</p>";
   } else if (h.skill > -0.02) {
     txt = "<p><b>Gleichstand.</b> Bei " + h.lead + " Tagen Vorlauf liegt der Best Guess mit "
-        + fmtNum(h.maeM) + " K praktisch auf der Klimatologie (" + fmtNum(h.maeC)
+        + fmtNum(h.maeM) + " °C praktisch auf der Klimatologie (" + fmtNum(h.maeC)
         + " K). Die Verschiebung hat hier weder geholfen noch geschadet.</p>";
   } else {
     txt = "<p><b>Schlechter als nichts tun.</b> Bei " + h.lead
         + " Tagen Vorlauf lag der Best Guess mit " + fmtNum(h.maeM)
-        + " K daneben, die reine Klimatologie mit nur " + fmtNum(h.maeC)
+        + " °C daneben, die reine Klimatologie mit nur " + fmtNum(h.maeC)
         + " K. Die Konditionierung auf die aktuellen Tendenzen hat den Erwartungswert "
         + "in diesem Zeitraum in die falsche Richtung geschoben.</p>";
   }
   txt += "<p>Über alle geprüften Vorlaufzeiten schneidet <b>" + best.lead
        + " Tage</b> am besten ab (" + fmtSigned(best.skill * 100, 0) + " % Skill). "
        + "Der mittlere Vorzeichenfehler bei " + h.lead + " Tagen beträgt "
-       + fmtSigned(h.biasM) + " K gegenüber " + fmtSigned(h.biasC)
-       + " K der Klimatologie — ein Wert deutlich neben null heißt, dass systematisch "
+       + fmtSigned(h.biasM) + " °C gegenüber " + fmtSigned(h.biasC)
+       + " °C der Klimatologie — ein Wert deutlich neben null heißt, dass systematisch "
        + "zu warm oder zu kalt gerechnet wurde, nicht bloß ungenau.</p>";
   txt += "<p><b>Zwei Einschränkungen, damit die Zahl nicht mehr behauptet, als sie kann.</b> "
        + "Erstens deckt der Rückblick nur " + shown.length + " Tage an einem Ort ab; das ist "
@@ -2313,15 +2437,21 @@ function renderGuessPanel(recent, analog, seasonalMap, days) {
   const lateShift = later.length ? mean(later.map((d) => d.adj.dT)) : 0;
 
   const seasVals = [...seasonalMap.values()];
-  const seasTxt = seasVals.length ? fmtSigned(seasVals[0]) + " K" : "nicht verfügbar";
+  const seasTxt = seasVals.length ? fmtSigned(seasVals[0]) + " °C" : "nicht verfügbar";
+
+  // Die Verschiebung greift erst, wo die echte Vorhersage aufhört — das steht
+  // jetzt auch in der Beschriftung, statt „nächste 30 Tage" zu behaupten.
+  const span = next30.length
+    ? "Tag " + (next30[0].lead + 1) + "–" + (next30[next30.length - 1].lead + 1)
+    : "später";
 
   $("guessPanel").innerHTML =
-    '<div class="col"><span class="lbl">Verschiebung, nächste 30 Tage</span>'
-    + '<div class="big">' + fmtSigned(avgShift) + " K</div></div>"
+    '<div class="col"><span class="lbl">Verschiebung, ' + span + '</span>'
+    + '<div class="v">' + fmtSigned(avgShift) + " °C</div></div>"
     + '<div class="col"><span class="lbl">Ab Monat 3</span><div class="v">'
-      + fmtSigned(lateShift) + " K</div></div>"
-    + '<div class="col"><span class="lbl">Letzte ' + recent.n + ' Tage</span><div class="v">'
-      + fmtSigned(recent.value) + " K</div></div>"
+      + fmtSigned(lateShift) + " °C</div></div>"
+    + '<div class="col"><span class="lbl">Letzte ' + recent.n + ' Tage gemessen</span><div class="v">'
+      + fmtSigned(recent.value) + " °C</div></div>"
     + '<div class="col"><span class="lbl">Saisonmodell</span><div class="v">' + seasTxt + "</div></div>"
     + '<div class="col"><span class="lbl">Ähnliche Jahre</span><div class="v">'
       + (analog.years.length ? analog.years.join(", ") : "—") + "</div></div>";
@@ -2406,6 +2536,7 @@ async function run(place) {
 
     $("out").hidden = false;
 
+    renderAnswer(STATE.days, retro, !!fc, place);
     renderGuessPanel(recent, analogOff, seasonalMap, STATE.days);
     renderCalendar(STATE.days, STATE.calMonths);
     renderRetro(retro);
