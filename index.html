@@ -260,6 +260,18 @@
   }
 
   .key { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 16px; font-size: .76rem; color: var(--mute); }
+  /* Vor dem Kalender: enger gesetzt, oben abgesetzt statt unten angehängt */
+  .key.legend {
+    margin: 0 0 16px; gap: 8px 18px; padding: 11px 14px;
+    border: 1.5px solid var(--rule); font-size: .74rem;
+  }
+  .key.legend .pointer { display: inline-flex; align-items: center; gap: 7px; color: var(--ink); }
+  .key i.past { background: var(--fill-soft); }
+
+  .subhead {
+    margin: 30px 0 12px; font-size: .68rem; font-weight: 700;
+    letter-spacing: .13em; text-transform: uppercase; color: var(--mute);
+  }
   .key i { display: inline-block; width: 22px; height: 12px; border: 1.5px solid var(--ink); margin-right: 8px; vertical-align: -2px; }
   .key i.warm { background: var(--ink); }
   .key i.cold { background-image: var(--hatch); }
@@ -326,20 +338,9 @@
   .day.today .dnum { color: var(--ink); font-weight: 700; }
   .day .wet { position: absolute; top: 3px; right: 4px; width: 5px; height: 5px; background: var(--ink); }
 
-  /* Vergangene Tage: gemessener Wert, darunter der Fehler der besten Schätzung */
+  /* Vergangene Tage: der gemessene Wert, sonst nichts */
   .day.past { background: var(--fill-soft); }
   .day.past .temp { font-weight: 700; }
-  .day .err {
-    position: absolute; left: 0; right: 0; bottom: 0; height: 6px;
-    border-top: 1px solid var(--rule);
-  }
-  .day .err::before {
-    content: ""; position: absolute; left: 50%; top: 0; bottom: 0;
-    width: 1px; background: var(--rule);
-  }
-  .day .err b { position: absolute; top: 1px; bottom: 0; display: block; }
-  .day .err b.warm { background: var(--ink); }
-  .day .err b.cold { background-image: var(--hatch-fine); border-top: 1px solid var(--ink); }
 
   /* ── Rückblick ───────────────────────────────────────────── */
 
@@ -711,10 +712,7 @@
         Für jeden Tag die Tageshöchsttemperatur und die Regenwahrscheinlichkeit.
         Ab Tag 17 steht dort <b>kein blanker Mittelwert</b>, sondern die <b>beste Schätzung</b>:
         der Klimawert des Kalendertags, verschoben um die aktuellen Tendenzen.
-        Woraus sich diese Verschiebung zusammensetzt, steht direkt darunter.
       </p>
-
-      <div class="panel" id="guessPanel"></div>
 
       <div class="cal-controls">
         <button class="chip" id="calDays" aria-pressed="true" type="button">Tag für Tag</button>
@@ -722,17 +720,28 @@
         <span class="range" id="calRange" aria-live="polite"></span>
       </div>
 
+      <!-- Die Legende steht vor dem Kalender: hinter ihm hätte man sie erst
+           gelesen, nachdem man die Zeichen schon nicht verstanden hat. -->
+      <div class="key legend" id="calKey">
+        <span><i class="warm"></i>echte Vorhersage, bis Tag 16</span>
+        <span><i class="clim"></i>Schätzung aus der Statistik</span>
+        <span><i class="past"></i>vergangen, gemessen</span>
+        <span><i style="height:6px;background:var(--ink)"></i>Balken unten: Regenwahrscheinlichkeit</span>
+        <span><i style="width:8px;height:8px;background:var(--ink);border:none"></i>Regentag ab 1 mm</span>
+        <span class="pointer">
+          <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 3l12 9-5 1 3 6-2 1-3-6-3 3z"/>
+          </svg>
+          Auf einen Tag zeigen oder tippen zeigt, woher der Wert kommt
+        </span>
+      </div>
+
       <div class="cal-months" id="calMonths"></div>
 
       <div class="yearview" id="yearView" hidden></div>
 
-      <div class="key" id="calKey">
-        <span><i class="warm"></i>echte Vorhersage (bis Tag 16)</span>
-        <span><i class="clim"></i>beste Schätzung aus der Statistik</span>
-        <span><i style="background:var(--fill-soft)"></i>vergangene Tage: gemessener Wert</span>
-        <span><i style="height:6px;background:var(--ink)"></i>Balken unten = Regenwahrscheinlichkeit, bei vergangenen Tagen der Fehler der besten Schätzung</span>
-        <span><i style="width:8px;height:8px;background:var(--ink);border:none"></i>Regentag (≥ 1 mm)</span>
-      </div>
+      <h3 class="subhead">Woraus sich die Verschiebung zusammensetzt</h3>
+      <div class="panel" id="guessPanel"></div>
 
       <div class="seam">
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -2080,10 +2089,10 @@ function renderCalendar(days, months) {
     for (const d of list) {
       const cell = document.createElement("div");
 
-      // Vergangene Tage zeigen die Messung, nicht den Erwartungswert — dort
-      // steht das Wetter fest. Der Balken unten ist deshalb auch keine
-      // Regenwahrscheinlichkeit mehr, sondern der Fehler, den die beste Schätzung
-      // an diesem Tag gemacht hätte. Ohne Messwert bleibt die Zelle leer.
+      // Vergangene Tage zeigen die Messung, nicht die Schätzung — dort steht das
+      // Wetter fest. Was die Schätzung damals gesagt hätte, steht im Tooltip und
+      // ausführlich in Abschnitt 02; in der Zelle wäre es eine zweite Bedeutung
+      // für dieselbe Fläche. Ohne Messwert bleibt die Zelle leer.
       if (d.past) {
         const r = d.retro;
         const dayHead = tipDate(d.date);
@@ -2109,19 +2118,15 @@ function renderCalendar(days, months) {
         }
         cell.dataset.tip = tipHTML(dayHead, "gemessen", pastRows, g ? {
           bar: { value: g.errM, max: 6, unit: "°C" },
-          note: "Gerechnet am Stichtag " + RETRO_LEAD + " Tage davor. Der Balken "
-              + "in der Zelle zeigt dieselbe Abweichung: nach rechts zu warm, nach links "
-              + "zu kalt gerechnet.",
+          note: "Die Schätzung wurde am Stichtag " + RETRO_LEAD + " Tage vorher gerechnet, "
+              + "ohne Kenntnis der Tage danach. Wie das über Monate ausgeht, steht in "
+              + "Abschnitt 02.",
         } : { note: "Für diesen Tag reicht die Messreihe nicht weit genug zurück, "
                   + "um die beste Schätzung nachzurechnen." });
         cell.innerHTML =
           '<span class="dnum">' + d.date.getDate() + "</span>"
           + '<span class="temp">' + Math.round(r.obs) + "°</span>"
-          + (r.wet === 1 ? '<span class="wet"></span>' : "")
-          + (g ? '<span class="err"><b class="' + (g.errM >= 0 ? "warm" : "cold") + '" style="'
-                 + (g.errM >= 0 ? "left:50%;" : "right:50%;") + "width:"
-                 + Math.min(50, Math.abs(g.errM) / 6 * 50).toFixed(1) + '%"></b></span>'
-               : "");
+          + (r.wet === 1 ? '<span class="wet"></span>' : "");
         grid.appendChild(cell);
         continue;
       }
