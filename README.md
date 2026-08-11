@@ -12,23 +12,47 @@ ehrlichen Angabe, wie gut das Verfahren historisch wirklich funktioniert hat.
 
 ## Status
 
-**Mockup mit Beispieldaten.** Layout, Design und Rechenlogik-Struktur stehen;
-die Anbindung an die APIs folgt. Die Beispielwerte sind plausibel gewählt,
-aber nicht gemessen.
+**An echten Daten.** Historie, Vorhersage und Saisonprognose werden live aus
+den Open-Meteo-APIs geladen und im Browser ausgewertet.
 
 ## Aufbau der Seite
 
 | # | Abschnitt | Inhalt |
 |---|-----------|--------|
-| 01 | Aktuelle Lage | Gemessene Monatsabweichungen der letzten 14 Monate gegenüber dem Normalwert 1991–2020 |
-| 02 | Saisonprognose | Ensemble-Monatsmittel eines Saisonvorhersagemodells, mit Streuung und Ensemble-Einigkeit |
-| 03 | Vergleichbare Jahre | Die fünf ähnlichsten Jahre seit 1950 und was in ihnen danach folgte |
-| 04 | Validierung | Leave-one-out über die gesamte Historie: Skill gegenüber der Baseline „es wird normal" |
-| 05 | Methodik | Quellen, Rechenwege, Grenzen |
+| 01 | Tageskalender | Echte 16-Tage-Vorhersage, danach der Best Guess: Klimawert des Kalendertags, verschoben um die aktuellen Tendenzen |
+| 02 | Rückblick | Derselbe Best Guess, für die letzten 120 Tage nachgerechnet und gegen die Messung gestellt |
+| 03 | Regenverlauf | Nächster Regentag aus der laufenden Vorhersage, danach die Regenwahrscheinlichkeit Woche für Woche |
+| 04 | Aktuelle Lage | Gemessene Monatsabweichungen der letzten 14 Monate gegenüber dem Normalwert 1991–2020 |
+| 05 | Saisonprognose | Ensemble-Monatsmittel eines Saisonvorhersagemodells, mit Streuung und Ensemble-Einigkeit |
+| 06 | Vergleichbare Jahre | Die fünf ähnlichsten Jahre seit 1950 und was in ihnen danach folgte |
+| 07 | Validierung | Leave-one-out über die gesamte Historie: Skill gegenüber der Baseline „es wird normal" |
+| 08 | Methodik | Quellen, Rechenwege, Grenzen |
 
-Abschnitt 04 ist der Punkt der Seite. Ein Analogverfahren sieht immer
-überzeugend aus — ob es etwas taugt, zeigt erst der Vergleich gegen die
+Die Abschnitte 02 und 07 sind der Punkt der Seite. Ein Analogverfahren sieht
+immer überzeugend aus — ob es etwas taugt, zeigt erst der Vergleich gegen die
 simpelste denkbare Vorhersage.
+
+## Rückblick
+
+Abschnitt 02 rechnet den Best Guess für jeden der letzten 120 Tage neu — mit
+14, 30, 60 und 90 Tagen Vorlauf — und stellt ihn der gemessenen
+Tageshöchsttemperatur gegenüber. Damit der Test nicht schummelt:
+
+- Für jeden Prüftag wird ein **Stichtag** gesetzt. Verwendet wird
+  ausschließlich, was an diesem Tag vorlag — inklusive der rund **sechs Tage
+  Verzögerung**, mit der die ERA5-Reanalyse erscheint.
+- Trend, Streuung und Analogsuche laufen auf einer Monatsreihe, die am Ende
+  des jeweiligen Ankermonats endet.
+- Auch die Tagesklimatologie des Rückblicks endet **vor** dem Prüfzeitraum,
+  sonst enthielte der Erwartungswert die zu prüfenden Tage bereits.
+- Der **Saisonbaustein fehlt** im Rückblick: alte CFSv2-Läufe sind nicht frei
+  abrufbar. Nachgerechnet werden nur Persistenz und Analogjahre; der Kalender
+  nutzt zusätzlich das Saisonmodell.
+
+120 Tage an einem Ort sind eine Stichprobe, kein Beweis — der belastbarere
+Test über die gesamte Historie steht in Abschnitt 07. Im Kalender zeigen
+vergangene Tage entsprechend den gemessenen Wert; der Balken darunter ist
+dort der Fehler, den der Best Guess an diesem Tag gemacht hätte.
 
 ## Geplante Datenquellen
 

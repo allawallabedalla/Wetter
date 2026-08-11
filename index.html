@@ -241,6 +241,49 @@
   .day.today .dnum { color: var(--ink); font-weight: 700; }
   .day .wet { position: absolute; top: 3px; right: 4px; width: 5px; height: 5px; background: var(--ink); }
 
+  /* Vergangene Tage: gemessener Wert, darunter der Fehler des Best Guess */
+  .day.past { background: var(--fill-soft); }
+  .day.past .temp { font-weight: 700; }
+  .day .err {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 6px;
+    border-top: 1px solid var(--rule);
+  }
+  .day .err::before {
+    content: ""; position: absolute; left: 50%; top: 0; bottom: 0;
+    width: 1px; background: var(--rule);
+  }
+  .day .err b { position: absolute; top: 1px; bottom: 0; display: block; }
+  .day .err b.warm { background: var(--ink); }
+  .day .err b.cold { background-image: var(--hatch-fine); border-top: 1px solid var(--ink); }
+
+  /* ── Rückblick ───────────────────────────────────────────── */
+
+  .retro { border: 2px solid var(--line); padding: 18px 18px 14px; }
+  .lane { margin-bottom: 20px; }
+  .lane:last-child { margin-bottom: 0; }
+  .lane .cap {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+    font-size: .64rem; font-weight: 700; letter-spacing: .13em; text-transform: uppercase;
+    color: var(--mute); margin-bottom: 8px;
+  }
+  .lane .cap em { font-style: normal; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .lane .bars {
+    position: relative; display: flex; align-items: stretch; gap: 1px;
+    height: 78px; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+  }
+  .lane .bars::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 50%;
+    height: 1px; background: var(--ink);
+  }
+  /* Richtung des Balkens = Vorzeichen des Fehlers; Fläche vs. Schraffur = Verfahren */
+  .lane .d { flex: 1 1 0; position: relative; min-width: 0; }
+  .lane .d b { position: absolute; left: 0; right: 0; display: block; background: var(--ink); }
+  .lane.clim .d b { background: transparent; background-image: var(--hatch-fine); border: 1px solid var(--ink); }
+  .lane .scale {
+    display: flex; justify-content: space-between; margin-top: 6px;
+    font-size: .6rem; color: var(--mute); font-variant-numeric: tabular-nums;
+  }
+
   .seam {
     display: flex; gap: 13px; align-items: flex-start;
     border: 1.5px solid var(--line); padding: 15px 18px; margin: 22px 0 0;
@@ -348,6 +391,8 @@
     .cal-months { grid-template-columns: 1fr; }
     .next-rain { gap: 18px; }
     th, td { padding: 10px 11px; font-size: .82rem; }
+    .retro { padding: 14px 12px 10px; }
+    .lane .bars { gap: 0; height: 62px; }
   }
 </style>
 </head>
@@ -412,7 +457,8 @@
         blanker Mittelwert</b>, sondern ein Best Guess: der Klimawert des Kalendertags,
         verschoben um die aktuellen Tendenzen — Persistenz der letzten Wochen,
         Saisonmodell und die Verläufe ähnlicher Jahre. Woraus sich das zusammensetzt,
-        steht direkt darunter; was es taugt, in Abschnitt 06.
+        steht direkt darunter; wie gut es zuletzt funktioniert hat, in Abschnitt 02;
+        was es über die gesamte Historie taugt, in Abschnitt 07.
       </p>
 
       <div class="next-rain" id="guessPanel"></div>
@@ -427,8 +473,9 @@
       <div class="key">
         <span><i class="warm"></i>echte Vorhersage (bis Tag 16)</span>
         <span><i class="clim"></i>statistischer Erwartungswert</span>
-        <span><i style="height:6px;background:var(--ink)"></i>Balkenhöhe unten = Regenwahrscheinlichkeit</span>
-        <span><i style="width:8px;height:8px;background:var(--ink);border:none"></i>Regentag erwartet (≥ 1 mm)</span>
+        <span><i style="background:var(--fill-soft)"></i>vergangene Tage: gemessener Wert</span>
+        <span><i style="height:6px;background:var(--ink)"></i>Balken unten = Regenwahrscheinlichkeit, bei vergangenen Tagen der Fehler des Best Guess</span>
+        <span><i style="width:8px;height:8px;background:var(--ink);border:none"></i>Regentag (≥ 1 mm)</span>
       </div>
 
       <div class="seam">
@@ -447,10 +494,39 @@
       </div>
     </section>
 
-    <!-- ═══ 02 · Regenverlauf ═══ -->
-    <section id="secRain">
+    <!-- ═══ 02 · Rückblick ═══ -->
+    <section id="secRetro">
       <div class="sec-head">
         <span class="num">02</span>
+        <div><h2>Rückblick — was hätte das Modell gesagt?</h2></div>
+      </div>
+      <p class="sec-sub">
+        Der Kalender oben ist eine Behauptung über die Zukunft. Hier steht dieselbe
+        Rechnung für die <b>Vergangenheit</b> — Tag für Tag nachgerechnet für die letzten
+        Monate, und daneben, was wirklich gemessen wurde. Für jeden Prüftag wird ein
+        Stichtag gesetzt und ausschließlich benutzt, was an diesem Stichtag vorlag:
+        Messreihe, Analogjahre, Klimatologie. Verglichen wird gegen die simpelste denkbare
+        Vorhersage — den reinen Klimawert des Kalendertags.
+      </p>
+
+      <div class="next-rain" id="retroPanel"></div>
+
+      <div class="retro" id="retroStrip"></div>
+
+      <div class="key">
+        <span><i class="warm"></i>Fehler des Best Guess</span>
+        <span><i class="clim"></i>Fehler der reinen Klimatologie</span>
+        <span>Balken nach oben = zu warm vorhergesagt, nach unten = zu kalt</span>
+      </div>
+
+      <div class="tablewrap" style="margin-top:24px"><table id="retroTable"></table></div>
+      <div class="verdict" id="retroVerdict"></div>
+    </section>
+
+    <!-- ═══ 03 · Regenverlauf ═══ -->
+    <section id="secRain">
+      <div class="sec-head">
+        <span class="num">03</span>
         <div><h2>Wann kommt wieder Regen?</h2></div>
       </div>
       <p class="sec-sub">
@@ -474,10 +550,10 @@
       <div class="note" id="rainStats"></div>
     </section>
 
-    <!-- ═══ 03 · Aktuelle Lage ═══ -->
+    <!-- ═══ 04 · Aktuelle Lage ═══ -->
     <section id="secNow">
       <div class="sec-head">
-        <span class="num">03</span>
+        <span class="num">04</span>
         <div><h2>Aktuelle Lage</h2></div>
       </div>
       <p class="sec-sub">
@@ -498,10 +574,10 @@
       </div>
     </section>
 
-    <!-- ═══ 04 · Saisonprognose ═══ -->
+    <!-- ═══ 05 · Saisonprognose ═══ -->
     <section id="secFc">
       <div class="sec-head">
-        <span class="num">04</span>
+        <span class="num">05</span>
         <div><h2>Saisonprognose</h2></div>
       </div>
       <p class="sec-sub">
@@ -531,10 +607,10 @@
       </div>
     </section>
 
-    <!-- ═══ 05 · Vergleichbare Jahre ═══ -->
+    <!-- ═══ 06 · Vergleichbare Jahre ═══ -->
     <section id="secAna">
       <div class="sec-head">
-        <span class="num">05</span>
+        <span class="num">06</span>
         <div><h2>Vergleichbare Jahre</h2></div>
       </div>
       <p class="sec-sub" id="anaSub"></p>
@@ -546,10 +622,10 @@
       </div>
     </section>
 
-    <!-- ═══ 06 · Validierung ═══ -->
+    <!-- ═══ 07 · Validierung ═══ -->
     <section id="secVal">
       <div class="sec-head">
-        <span class="num">06</span>
+        <span class="num">07</span>
         <div><h2>Wie verlässlich ist der Best Guess?</h2></div>
       </div>
       <p class="sec-sub">
@@ -564,10 +640,10 @@
       <div class="verdict" id="valVerdict"></div>
     </section>
 
-    <!-- ═══ 07 · Methodik ═══ -->
+    <!-- ═══ 08 · Methodik ═══ -->
     <section style="border-bottom:none">
       <div class="sec-head">
-        <span class="num">07</span>
+        <span class="num">08</span>
         <div><h2>Methodik &amp; Grenzen</h2></div>
       </div>
       <p class="sec-sub">
@@ -614,7 +690,7 @@
           <ul>
             <li><b>Persistenz:</b> die mittlere Abweichung der letzten 30 Messtage, mit einer
               Halbwertszeit von 25 Tagen abklingend</li>
-            <li><b>Saisonmodell:</b> die monatliche Ensemble-Anomalie aus Abschnitt 04</li>
+            <li><b>Saisonmodell:</b> die monatliche Ensemble-Anomalie aus Abschnitt 05</li>
             <li><b>Ähnliche Jahre:</b> wie die fünf Analogjahre an genau diesem Kalendertag
               verliefen, gewichtet nach Ähnlichkeit</li>
           </ul>
@@ -655,6 +731,20 @@
           übrigen Jahren gebildet und mit dem tatsächlichen Verlauf verglichen.</p>
           <p>Ein Skill-Score von <b>0</b> bedeutet: genauso gut wie „es wird normal“.
           Negativ bedeutet: schlechter als nichts tun.</p>
+        </div>
+
+        <div class="cell">
+          <h3>
+            <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 109-9 9 9 0 00-6.4 2.6L3 8"/><path d="M3 3v5h5"/></svg>
+            Rückblick
+          </h3>
+          <p>Für jeden der letzten <b>120 Tage</b> wird der Best Guess mit 14, 30, 60 und
+          90 Tagen Vorlauf neu gerechnet. Maßgeblich ist dabei nur, was am jeweiligen
+          Stichtag vorlag — samt der <b>sechs Tage Verzögerung</b>, mit der die Reanalyse
+          erscheint.</p>
+          <p>Auch die Klimatologie des Rückblicks endet vor dem Prüfzeitraum, sonst
+          enthielte der Erwartungswert die zu prüfenden Tage bereits. Der Saisonbaustein
+          fehlt: alte CFSv2-Läufe sind nicht frei abrufbar.</p>
         </div>
 
         <div class="cell">
@@ -701,6 +791,12 @@ const WIN_LEN    = 6;      // Vergleichsfenster des Analogverfahrens in Monaten
 const LEAD_LEN   = 3;      // Vorhersagehorizont des Analogverfahrens in Monaten
 const K_ANALOGS  = 5;
 const MIN_GAP_M  = 24;
+
+const PERS_DAYS   = 30;               // Fenster der Persistenz in Tagen
+const ARCHIVE_LAG = 6;                // Verzögerung der Reanalyse in Tagen
+const RETRO_DAYS  = 120;              // Länge des Prüfzeitraums im Rückblick
+const RETRO_LEADS = [14, 30, 60, 90]; // geprüfte Vorlaufzeiten in Tagen
+const RETRO_LEAD  = 30;               // Vorlauf, der im Kalender und im Panel steht
 
 const MON   = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
 const MONL  = ["Januar","Februar","März","April","Mai","Juni",
@@ -851,8 +947,12 @@ async function fetchSeasonal(lat, lon) {
  * ±DOY_WIN Tagen aus. Die Temperatur wird per Regression auf das laufende
  * Jahr fortgeschrieben, damit der Erwartungswert nicht im Klima der
  * Vergangenheit hängenbleibt.
+ *
+ * `cutoff` (ISO-Datum, optional) blendet alles ab diesem Tag aus. Der
+ * Rückblick braucht das: eine Klimatologie, die die zu prüfenden Tage
+ * schon kennt, prüft sich sonst selbst.
  */
-function buildDoyClimatology(daily, targetYear) {
+function buildDoyClimatology(daily, targetYear, cutoff) {
   const time = daily.time;
   const tmax = daily.temperature_2m_max;
   const tmin = daily.temperature_2m_min;
@@ -861,6 +961,7 @@ function buildDoyClimatology(daily, targetYear) {
   // Rohdaten nach Kalendertag bündeln
   const buckets = Array.from({ length: 365 }, () => ({ y: [], tx: [], tn: [], p: [] }));
   for (let i = 0; i < time.length; i++) {
+    if (cutoff && time[i] >= cutoff) break;
     const year = +time[i].slice(0, 4), m = +time[i].slice(5, 7) - 1, d = +time[i].slice(8, 10);
     const tx = tmax[i], tn = tmin[i], p = prcp[i];
     if (tx === null || tx === undefined) continue;
@@ -1019,21 +1120,165 @@ function makeBestGuess(recent, analog, seasonal) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   Rückblick — derselbe Best Guess, nachgerechnet gegen die Messung
+
+   Die Validierung in Abschnitt 07 prüft die Bausteine auf Monatsebene
+   über die ganze Historie. Hier läuft der umgekehrte Test: der komplette
+   Tagesbaustein, so wie er im Kalender steht, für jeden Tag der letzten
+   RETRO_DAYS Tage — und daneben, was wirklich gemessen wurde.
+
+   Sauberkeit des Tests: für einen Prüftag D mit Vorlauf L wird ein
+   Stichtag D−L gesetzt. Verwendet wird ausschließlich, was an diesem
+   Stichtag vorlag — inklusive der Verzögerung der Reanalyse von
+   ARCHIVE_LAG Tagen. Die Klimatologie selbst kennt den Prüfzeitraum
+   ebenfalls nicht (Cutoff beim ersten Prüftag).
+   ═══════════════════════════════════════════════════════════════ */
+
+/** Tagesanomalien gegenüber dem trendkorrigierten Erwartungswert, indexgleich zu daily.time. */
+function dailyAnomalies(daily, doyData) {
+  const time = daily.time, tmax = daily.temperature_2m_max;
+  const out = new Array(time.length).fill(null);
+  for (let i = 0; i < time.length; i++) {
+    const tx = tmax[i];
+    if (tx === null || tx === undefined) continue;
+    const y = +time[i].slice(0, 4), m = +time[i].slice(5, 7) - 1, d = +time[i].slice(8, 10);
+    const reg = doyData.regs[doyOf(y, m, d)];
+    if (!reg) continue;
+    out[i] = tx - (reg.a + reg.b * y);
+  }
+  return out;
+}
+
+/** Mittlere Anomalie der letzten `days` Messtage vor Index `end` (exklusiv). */
+function persistenceBefore(anom, end, days) {
+  const vals = [];
+  for (let i = end - 1; i >= 0 && vals.length < days; i--) {
+    if (anom[i] !== null) vals.push(anom[i]);
+  }
+  return vals.length >= Math.min(10, days) ? { value: mean(vals), n: vals.length } : null;
+}
+
+/** Letzter am Stichtag abgeschlossener Monat — Ankermonat des Analogverfahrens. */
+function anchorBefore(dateKey, monthly) {
+  let a = absIdx(+dateKey.slice(0, 4), +dateKey.slice(5, 7) - 1) - 1;
+  while (a > 0 && (monthly.t[a] === null || monthly.days[a] < monthly.expected[a] - 1)) a--;
+  return a;
+}
+
+function buildRetro(daily, doyRetro, monthly) {
+  const time = daily.time;
+  const tmax = daily.temperature_2m_max;
+  const prcp = daily.precipitation_sum || [];
+  const n = time.length;
+  const anom = dailyAnomalies(daily, doyRetro);
+  const EMPTY_SEASONAL = new Map();
+
+  // Die Analogverschiebung hängt nur am Ankermonat — pro Monat einmal rechnen
+  // reicht. Trend, Streuung und Analogsuche laufen dabei auf einer Monatsreihe,
+  // die am Ende des Ankermonats endet: alles Spätere war am Stichtag unbekannt.
+  const offCache = new Map();
+  const offsetsFor = (anchor) => {
+    if (!offCache.has(anchor)) {
+      const cut = idxYear(anchor + 1) + "-" + pad2(idxMon(anchor + 1) + 1) + "-01";
+      const cl = buildClimatology(aggregateMonthly(daily, cut));
+      offCache.set(anchor,
+        analogOffsets(doyRetro, findAnalogs(cl.z, cl.anomDet, anchor, K_ANALOGS, true)));
+    }
+    return offCache.get(anchor);
+  };
+
+  const acc = new Map(RETRO_LEADS.map((L) => [L, {
+    n: 0, sumM: 0, sumC: 0, biasM: 0, biasC: 0, better: 0,
+    nR: 0, brierM: 0, brierC: 0,
+  }]));
+
+  const days = [];
+  for (let j = Math.max(0, n - RETRO_DAYS); j < n; j++) {
+    const obs = tmax[j];
+    if (obs === null || obs === undefined) continue;
+    const y = +time[j].slice(0, 4), m = +time[j].slice(5, 7) - 1, d = +time[j].slice(8, 10);
+    const doy = doyOf(y, m, d);
+    const reg = doyRetro.regs[doy], cd = doyRetro.doy[doy];
+    if (!reg) continue;
+
+    const climT = reg.a + reg.b * y;
+    const date  = new Date(y, m, d);
+    const pv    = prcp[j];
+    const wet   = (pv === null || pv === undefined || Number.isNaN(pv)) ? null : (pv >= WET_MM ? 1 : 0);
+
+    const rec = { key: time[j], date, obs, clim: climT, prec: (pv === undefined ? null : pv),
+                  wet, byLead: new Map() };
+
+    for (const L of RETRO_LEADS) {
+      // Stichtag ist j−L; das Archiv reicht dort bis j−L−ARCHIVE_LAG einschließlich.
+      const availJ = j - L - ARCHIVE_LAG + 1;  // erster am Stichtag noch unbekannter Messtag
+      if (availJ - PERS_DAYS < 0) continue;
+      const pers = persistenceBefore(anom, availJ, PERS_DAYS);
+      if (!pers) continue;
+      const anchor = anchorBefore(time[availJ - 1], monthly);
+      if (anchor < WIN_LEN) continue;
+
+      const g = makeBestGuess(pers, offsetsFor(anchor), EMPTY_SEASONAL)(date, L);
+      const model = climT + g.dT;
+      const errM = model - obs, errC = climT - obs;
+
+      const s = acc.get(L);
+      s.n++;
+      s.sumM += Math.abs(errM); s.sumC += Math.abs(errC);
+      s.biasM += errM;          s.biasC += errC;
+      if (Math.abs(errM) <= Math.abs(errC)) s.better++;
+      if (wet !== null && cd && !Number.isNaN(cd.rainProb)) {
+        const pM = Math.max(0.02, Math.min(0.98, cd.rainProb + g.dR));
+        s.brierM += (pM - wet) ** 2;
+        s.brierC += (cd.rainProb - wet) ** 2;
+        s.nR++;
+      }
+      rec.byLead.set(L, { model, errM, errC, dT: g.dT });
+    }
+    if (rec.byLead.size) days.push(rec);
+  }
+
+  const stats = [];
+  for (const L of RETRO_LEADS) {
+    const s = acc.get(L);
+    if (s.n < 20) continue;
+    stats.push({
+      lead: L, n: s.n,
+      maeM: s.sumM / s.n, maeC: s.sumC / s.n,
+      skill: s.sumC === 0 ? 0 : 1 - s.sumM / s.sumC,
+      biasM: s.biasM / s.n, biasC: s.biasC / s.n,
+      better: s.better / s.n,
+      bss: (s.nR >= 20 && s.brierC > 0) ? 1 - s.brierM / s.brierC : NaN,
+      nR: s.nR,
+    });
+  }
+
+  const head = stats.find((s) => s.lead === RETRO_LEAD) || stats[stats.length - 1] || null;
+  return { days, stats, head, byKey: new Map(days.map((r) => [r.key, r])),
+           ok: days.length >= 30 && stats.length > 0 };
+}
+
+/* ═══════════════════════════════════════════════════════════════
    Monatsaggregation, Normalwerte, Trend
    ═══════════════════════════════════════════════════════════════ */
 
-function aggregateMonthly(daily) {
+/** `cutoff` (ISO-Datum, optional) schneidet die Reihe ab — für den Rückblick. */
+function aggregateMonthly(daily, cutoff) {
   const time = daily.time;
   const tArr = daily.temperature_2m_mean || [];
   const pArr = daily.precipitation_sum || [];
 
-  const last = time[time.length - 1];
+  let len = time.length;
+  if (cutoff) while (len > 0 && time[len - 1] >= cutoff) len--;
+  if (!len) return { t: [], p: [], days: [], expected: [], nMonths: 0 };
+
+  const last = time[len - 1];
   const nMonths = absIdx(+last.slice(0, 4), +last.slice(5, 7) - 1) + 1;
 
   const tSum = new Float64Array(nMonths), tN = new Int32Array(nMonths);
   const pSum = new Float64Array(nMonths), pN = new Int32Array(nMonths);
 
-  for (let d = 0; d < time.length; d++) {
+  for (let d = 0; d < len; d++) {
     const i = absIdx(+time[d].slice(0, 4), +time[d].slice(5, 7) - 1);
     if (i < 0 || i >= nMonths) continue;
     const tv = tArr[d], pv = pArr[d];
@@ -1354,11 +1599,40 @@ function renderCalendar(days, months) {
     for (const d of list) {
       const cell = document.createElement("div");
 
-      // Vergangene Tage bleiben leer: dort einen Erwartungswert anzuzeigen,
-      // würde wie eine Vorhersage aussehen, obwohl das Wetter längst feststeht.
+      // Vergangene Tage zeigen die Messung, nicht den Erwartungswert — dort
+      // steht das Wetter fest. Der Balken unten ist deshalb auch keine
+      // Regenwahrscheinlichkeit mehr, sondern der Fehler, den der Best Guess
+      // an diesem Tag gemacht hätte. Ohne Messwert bleibt die Zelle leer.
       if (d.past) {
-        cell.className = "day pad";
-        cell.innerHTML = '<span class="dnum">' + d.date.getDate() + "</span>";
+        const r = d.retro;
+        if (!r) {
+          cell.className = "day pad";
+          cell.title = d.date.getDate() + ". " + MONL[d.date.getMonth()]
+            + " — noch kein Messwert: die Reanalyse erscheint mit rund "
+            + ARCHIVE_LAG + " Tagen Verzögerung.";
+          cell.innerHTML = '<span class="dnum">' + d.date.getDate() + "</span>";
+          grid.appendChild(cell);
+          continue;
+        }
+        const g = r.byLead.get(RETRO_LEAD);
+        cell.className = "day past";
+        cell.title =
+          DOWL[dowMon(d.date)] + ", " + d.date.getDate() + ". " + MONL[d.date.getMonth()]
+          + " — gemessen: " + fmtNum(r.obs) + " °C"
+          + (r.prec === null ? "" : ", " + fmtNum(r.prec) + " mm")
+          + (g ? " · Best Guess mit " + RETRO_LEAD + " Tagen Vorlauf: " + fmtNum(g.model)
+                 + " °C (" + fmtSigned(g.errM) + " K)"
+                 + " · reine Klimatologie: " + fmtNum(r.clim) + " °C ("
+                 + fmtSigned(g.errC) + " K)"
+               : " · kein Rückblick verfügbar");
+        cell.innerHTML =
+          '<span class="dnum">' + d.date.getDate() + "</span>"
+          + '<span class="temp">' + Math.round(r.obs) + "°</span>"
+          + (r.wet === 1 ? '<span class="wet"></span>' : "")
+          + (g ? '<span class="err"><b class="' + (g.errM >= 0 ? "warm" : "cold") + '" style="'
+                 + (g.errM >= 0 ? "left:50%;" : "right:50%;") + "width:"
+                 + Math.min(50, Math.abs(g.errM) / 6 * 50).toFixed(1) + '%"></b></span>'
+               : "");
         grid.appendChild(cell);
         continue;
       }
@@ -1670,6 +1944,126 @@ function renderValidation(v, anchor) {
     + '<div class="txt">' + txt + "</div>";
 }
 
+/* ── Rückblick ──────────────────────────────────────────────── */
+
+const dmy = (d) => d.getDate() + ". " + MON[d.getMonth()];
+
+/** Ein Streifen aus Tagesfehlern, an der Nulllinie gespiegelt. */
+function errorLane(title, note, days, pick, scale, klass) {
+  let bars = "";
+  for (const r of days) {
+    const e = pick(r);
+    if (e === null || e === undefined || Number.isNaN(e)) { bars += '<span class="d"></span>'; continue; }
+    const h = Math.min(50, Math.abs(e) / scale * 50);
+    const pos = e >= 0 ? "bottom:50%;" : "top:50%;";
+    bars += '<span class="d" title="' + dmy(r.date) + ": " + fmtSigned(e) + ' K"><b style="'
+          + pos + "height:" + h.toFixed(1) + '%"></b></span>';
+  }
+  return '<div class="lane' + (klass ? " " + klass : "") + '">'
+    + '<div class="cap"><span>' + title + "</span><em>" + note + "</em></div>"
+    + '<div class="bars">' + bars + "</div>"
+    + '<div class="scale"><span>' + dmy(days[0].date) + "</span>"
+    + "<span>Skala ± " + fmtNum(scale, 0) + " K</span>"
+    + "<span>" + dmy(days[days.length - 1].date) + "</span></div></div>";
+}
+
+function renderRetro(retro) {
+  if (!retro.ok || !retro.head) { $("secRetro").hidden = true; return; }
+  $("secRetro").hidden = false;
+
+  const h = retro.head;
+  const shown = retro.days.filter((r) => r.byLead.has(h.lead));
+  const first = shown[0].date, last = shown[shown.length - 1].date;
+
+  $("retroPanel").innerHTML =
+    '<div class="col"><span class="lbl">Mittlerer Fehler, ' + h.lead + ' Tage Vorlauf</span>'
+    + '<div class="big">' + fmtNum(h.maeM) + " K</div></div>"
+    + '<div class="col"><span class="lbl">Reine Klimatologie</span><div class="v">'
+      + fmtNum(h.maeC) + " K</div></div>"
+    + '<div class="col"><span class="lbl">Vorsprung</span><div class="v">'
+      + fmtSigned(h.skill * 100, 0) + " %</div></div>"
+    + '<div class="col"><span class="lbl">Näher dran an</span><div class="v">'
+      + Math.round(h.better * 100) + " % der Tage</div></div>"
+    + '<div class="col"><span class="lbl">Prüfzeitraum</span><div class="v">'
+      + dmy(first) + " – " + dmy(last) + "</div></div>";
+
+  // Gemeinsame Skala für beide Streifen, damit die Höhen vergleichbar bleiben
+  let mx = 0;
+  for (const r of shown) {
+    const g = r.byLead.get(h.lead);
+    mx = Math.max(mx, Math.abs(g.errM), Math.abs(g.errC));
+  }
+  const scale = Math.max(4, Math.ceil(mx));
+
+  $("retroStrip").innerHTML =
+    errorLane("Best Guess · " + h.lead + " Tage Vorlauf",
+              "Ø " + fmtNum(h.maeM) + " K",
+              shown, (r) => r.byLead.get(h.lead).errM, scale, "")
+    + errorLane("Reine Klimatologie · derselbe Zeitraum",
+                "Ø " + fmtNum(h.maeC) + " K",
+                shown, (r) => r.byLead.get(h.lead).errC, scale, "clim");
+
+  let rows = "<tr><th>Vorlauf</th><th>Best Guess</th><th>Klimatologie</th>"
+           + "<th>Skill</th><th>Näher dran</th><th>Regen</th></tr>";
+  for (const s of retro.stats) {
+    rows += "<tr" + (s.lead === h.lead ? ' class="accent"' : "") + ">"
+      + "<td>" + s.lead + " Tage</td>"
+      + '<td class="n">' + fmtNum(s.maeM) + " K</td>"
+      + '<td class="n">' + fmtNum(s.maeC) + " K</td>"
+      + '<td class="n">' + fmtSigned(s.skill * 100, 0) + " %</td>"
+      + '<td class="n">' + Math.round(s.better * 100) + " %</td>"
+      + '<td class="n">' + (Number.isNaN(s.bss) ? "—" : fmtSigned(s.bss * 100, 0) + " %")
+      + "</td></tr>";
+  }
+  $("retroTable").innerHTML = rows;
+
+  const best = retro.stats.reduce((a, b) => (a.skill >= b.skill ? a : b));
+  let txt;
+  if (h.skill > 0.05) {
+    txt = "<p><b>Der Best Guess lag im Prüfzeitraum vorn.</b> Bei " + h.lead
+        + " Tagen Vorlauf verfehlte er die gemessene Tageshöchsttemperatur im Mittel um "
+        + fmtNum(h.maeM) + " K, die reine Klimatologie um " + fmtNum(h.maeC) + " K — "
+        + fmtNum(h.skill * 100, 0) + " % weniger Fehler, und an " + Math.round(h.better * 100)
+        + " % der Tage war er näher dran.</p>";
+  } else if (h.skill > -0.02) {
+    txt = "<p><b>Gleichstand.</b> Bei " + h.lead + " Tagen Vorlauf liegt der Best Guess mit "
+        + fmtNum(h.maeM) + " K praktisch auf der Klimatologie (" + fmtNum(h.maeC)
+        + " K). Die Verschiebung hat hier weder geholfen noch geschadet.</p>";
+  } else {
+    txt = "<p><b>Schlechter als nichts tun.</b> Bei " + h.lead
+        + " Tagen Vorlauf lag der Best Guess mit " + fmtNum(h.maeM)
+        + " K daneben, die reine Klimatologie mit nur " + fmtNum(h.maeC)
+        + " K. Die Konditionierung auf die aktuellen Tendenzen hat den Erwartungswert "
+        + "in diesem Zeitraum in die falsche Richtung geschoben.</p>";
+  }
+  txt += "<p>Über alle geprüften Vorlaufzeiten schneidet <b>" + best.lead
+       + " Tage</b> am besten ab (" + fmtSigned(best.skill * 100, 0) + " % Skill). "
+       + "Der mittlere Vorzeichenfehler bei " + h.lead + " Tagen beträgt "
+       + fmtSigned(h.biasM) + " K gegenüber " + fmtSigned(h.biasC)
+       + " K der Klimatologie — ein Wert deutlich neben null heißt, dass systematisch "
+       + "zu warm oder zu kalt gerechnet wurde, nicht bloß ungenau.</p>";
+  txt += "<p><b>Zwei Einschränkungen, damit die Zahl nicht mehr behauptet, als sie kann.</b> "
+       + "Erstens deckt der Rückblick nur " + shown.length + " Tage an einem Ort ab; das ist "
+       + "eine Stichprobe, kein Beweis — eine warme Großwetterlage über den halben Zeitraum "
+       + "kann das Ergebnis in beide Richtungen kippen. Der belastbarere Test über die "
+       + "gesamte Historie steht in Abschnitt 07. Zweitens fehlt hier der Saisonbaustein: "
+       + "alte CFSv2-Läufe sind nicht frei abrufbar, der Rückblick rechnet deshalb nur mit "
+       + "Persistenz und Analogjahren. Der Kalender oben nutzt zusätzlich das Saisonmodell.</p>";
+  if (!Number.isNaN(h.bss)) {
+    txt += "<p>Die Spalte <b>Regen</b> steht bewusst daneben: Sie vergleicht die "
+         + "vorhergesagte Regenwahrscheinlichkeit über den Brier-Score mit der reinen "
+         + "Häufigkeit des Kalendertags. Der Vorsprung liegt bei "
+         + fmtSigned(h.bss * 100, 0) + " % — auf diesem Horizont ist Niederschlag "
+         + "praktisch nicht vorhersagbar, und genau das sollte dort auch stehen.</p>";
+  }
+
+  $("retroVerdict").innerHTML =
+    '<svg class="icon lg" viewBox="0 0 24 24" aria-hidden="true">'
+    + '<path d="M3 12a9 9 0 109-9 9 9 0 00-6.4 2.6L3 8"/><path d="M3 3v5h5"/>'
+    + '<path d="M12 8v4l3 2"/></svg>'
+    + '<div class="txt">' + txt + "</div>";
+}
+
 /** Legt offen, woraus die Verschiebung gegenüber der reinen Klimatologie besteht. */
 function renderGuessPanel(recent, analog, seasonalMap, days) {
   const ahead = days.filter((d) => d.source === "clim" && !d.past && d.adj);
@@ -1753,16 +2147,28 @@ async function run(place) {
           m.year > now.getFullYear() || (m.year === now.getFullYear() && m.month >= now.getMonth()))
       : [];
 
-    const recent = recentAnomaly(hist.daily, doyData, 30);
+    const recent = recentAnomaly(hist.daily, doyData, PERS_DAYS);
     const analogOff = analogOffsets(doyData, analogs);
     const seasonalMap = seasonalOffsets(fcMonths, clim);
     const guess = makeBestGuess(recent, analogOff, seasonalMap);
 
     STATE.days = buildDaySeries(doyData, fc, 13, guess);
+
+    setLoading("Rechnet den Best Guess für die letzten " + RETRO_DAYS + " Tage nach …");
+    // Eigene Klimatologie ohne den Prüfzeitraum — sonst prüft sie sich selbst.
+    const cutoff = hist.daily.time[Math.max(0, hist.daily.time.length - RETRO_DAYS)];
+    const doyRetro = buildDoyClimatology(hist.daily, year, cutoff);
+    const retro = buildRetro(hist.daily, doyRetro, monthly);
+    for (const d of STATE.days) {
+      const r = retro.byKey.get(d.key);
+      if (r) d.retro = r;
+    }
+
     $("out").hidden = false;
 
     renderGuessPanel(recent, analogOff, seasonalMap, STATE.days);
     renderCalendar(STATE.days, STATE.calMonths);
+    renderRetro(retro);
     renderNextRain(STATE.days, !!fc);
     renderWeeks(STATE.days);
     renderRainStats(STATE.days, doyData);
