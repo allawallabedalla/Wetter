@@ -112,6 +112,11 @@
   .place button:hover { background: var(--paper); color: var(--ink); }
   .place button[disabled] { cursor: progress; opacity: .5; }
   .coords { margin: 14px 0 0; font-size: .8rem; color: var(--mute); font-variant-numeric: tabular-nums; }
+  .hint {
+    margin: 12px 0 0; padding: 8px 12px; max-width: 460px;
+    border: 1.5px solid var(--line); background: var(--fill-soft);
+    font-size: .82rem; font-weight: 600;
+  }
 
   /* ── Ladezustand / Fehler ────────────────────────────────── */
 
@@ -263,7 +268,14 @@
 
   /* ── Tageskalender ───────────────────────────────────────── */
 
-  .cal-controls { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 22px; }
+  .cal-controls {
+    display: flex; flex-wrap: wrap; gap: 10px 14px;
+    align-items: center; margin-bottom: 22px;
+  }
+  /* Der Umschalter verlängert den Kalender weit unterhalb des Fensters — ohne
+     diese Zeile sieht ein Klick aus, als passiere nichts. */
+  .cal-controls .range { font-size: .74rem; color: var(--mute); }
+  .cal-controls .range b { color: var(--ink); font-weight: 700; }
   .chip {
     border: 1.5px solid var(--line); background: transparent; color: var(--ink);
     font: inherit; font-size: .7rem; font-weight: 700; letter-spacing: .1em;
@@ -573,6 +585,7 @@
       <button type="submit" id="go">Laden</button>
     </form>
     <p class="coords" id="coords">Fulda, Hessen</p>
+    <p class="hint" id="formHint" role="alert" hidden></p>
   </header>
 
   <div class="loading" id="loading" hidden>
@@ -663,6 +676,7 @@
       <div class="cal-controls">
         <button class="chip" id="cal6" aria-pressed="true" type="button">6 Monate</button>
         <button class="chip" id="cal12" aria-pressed="false" type="button">12 Monate</button>
+        <span class="range" id="calRange" aria-live="polite"></span>
       </div>
 
       <div class="cal-months" id="calMonths"></div>
@@ -2109,6 +2123,19 @@ function renderCalendar(days, months) {
     el.appendChild(grid);
     box.appendChild(el);
   }
+
+  // Was gerade zu sehen ist — direkt neben dem Umschalter, weil die Wirkung
+  // des Klicks sonst unterhalb des Fensterrands verpufft.
+  const keys = [...groups.keys()];
+  if (keys.length) {
+    const von = groups.get(keys[0])[0].date;
+    const bisList = groups.get(keys[keys.length - 1]);
+    const bis = bisList[bisList.length - 1].date;
+    $("calRange").innerHTML =
+      "Zeigt <b>" + keys.length + " Monate</b>: " + MONL[von.getMonth()] + " " + von.getFullYear()
+      + " bis " + MONL[bis.getMonth()] + " " + bis.getFullYear()
+      + " · <b>" + fmtInt(shown.filter((d) => !d.past).length) + " Tage voraus</b>";
+  }
 }
 
 function renderNextRain(days, hasForecast) {
@@ -2675,17 +2702,29 @@ async function run(place) {
 
 /* ── Bedienung ───────────────────────────────────────────────── */
 
+const setHint = (text) => {
+  const el = $("formHint");
+  el.textContent = text || "";
+  el.hidden = !text;
+};
+
 $("form").addEventListener("submit", async (ev) => {
   ev.preventDefault();
+  if (busy) return;
   const q = $("q").value.trim();
-  if (!q || busy) return;
+  if (!q) {                      // sonst wirkt der Knopf schlicht kaputt
+    setHint("Bitte einen Ortsnamen eingeben.");
+    $("q").focus();
+    return;
+  }
+  setHint("");
   $("go").disabled = true;
   setLoading("Suche Ort …");
   try {
     const place = await geocode(q);
     clearLoading();
     $("go").disabled = false;
-    if (!place) { $("coords").textContent = "Kein Ort mit diesem Namen gefunden."; return; }
+    if (!place) { setHint("Kein Ort mit dem Namen „" + q + "\u201c gefunden."); return; }
     run(place);
   } catch (e) {
     clearLoading();
