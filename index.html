@@ -369,6 +369,35 @@
     font-size: .6rem; color: var(--mute); font-variant-numeric: tabular-nums;
   }
 
+  /* ── Jahresansicht ───────────────────────────────────────── */
+
+  /* Zwölf Zeilen auf einer gemeinsamen Temperaturachse: der Jahresgang wird
+     als Form lesbar, was 360 Tageszellen nicht leisten. */
+  .yearview .head, .yearview .yrow {
+    display: grid; grid-template-columns: 92px 1fr 88px 96px;
+    gap: 14px; align-items: center;
+  }
+  .yearview .head {
+    padding: 11px 16px; border-bottom: 1.5px solid var(--line);
+    font-size: .64rem; font-weight: 700; letter-spacing: .13em;
+    text-transform: uppercase; color: var(--mute);
+  }
+  .yearview .head span:nth-child(3), .yearview .head span:nth-child(4) { text-align: right; }
+  .yearview .yrow { padding: 7px 0; font-size: .86rem; }
+  .yearview .yrow .lbl { color: var(--mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .yearview .yrow .num { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .yearview .yrow .num.soft { font-weight: 600; color: var(--mute); }
+
+  .yearview .tspan {
+    position: relative; height: 22px;
+    border-left: 1px solid var(--rule); border-right: 1px solid var(--rule);
+  }
+  .yearview .tspan .tick { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--rule); }
+  .yearview .tspan .rng  { position: absolute; top: 10px; height: 1.5px; background: var(--ink); }
+  .yearview .tspan .cap  { position: absolute; top: 5px; width: 1.5px; height: 12px; background: var(--ink); }
+  .yearview .tspan .mid  { position: absolute; top: 2px; width: 5px; height: 18px; background: var(--ink); }
+  .yearview .tspan .mid.clim { background: transparent; background-image: var(--hatch); border: 1px solid var(--ink); }
+
   .seam {
     display: flex; gap: 13px; align-items: flex-start;
     border: 1.5px solid var(--line); padding: 15px 18px; margin: 22px 0 0;
@@ -541,6 +570,20 @@
     th, td { padding: 10px 11px; font-size: .82rem; }
     .retro { padding: 14px 12px 10px; }
     .lane .bars { gap: 0; height: 62px; }
+
+    /* Die Jahresansicht hat vier Spalten, nicht drei — die Regeln oben für
+       den Anomalie-Chart würden sie sonst zusammenschieben. */
+    .yearview .head, .yearview .yrow {
+      grid-template-columns: 52px 1fr 54px 38px; gap: 9px; font-size: .8rem;
+    }
+    .yearview .head { font-size: .57rem; letter-spacing: .07em; padding: 10px 11px; }
+    .yearview .rows { padding: 6px 11px 12px; }
+    .yearview .axis { padding: 0 11px 11px; }
+    .yearview .head span:nth-child(2) { font-size: 0; }
+    .yearview .head span:nth-child(2)::after { content: "Spanne"; font-size: .57rem; }
+    .yearview .head span:nth-child(4) { font-size: 0; }
+    .yearview .head span:nth-child(4)::after { content: "Regen"; font-size: .57rem; }
+    .yearview .yrow .lbl { font-size: .74rem; }
   }
 </style>
 </head>
@@ -674,14 +717,16 @@
       <div class="panel" id="guessPanel"></div>
 
       <div class="cal-controls">
-        <button class="chip" id="cal6" aria-pressed="true" type="button">6 Monate</button>
-        <button class="chip" id="cal12" aria-pressed="false" type="button">12 Monate</button>
+        <button class="chip" id="calDays" aria-pressed="true" type="button">Tag für Tag</button>
+        <button class="chip" id="calYear" aria-pressed="false" type="button">Ganzes Jahr</button>
         <span class="range" id="calRange" aria-live="polite"></span>
       </div>
 
       <div class="cal-months" id="calMonths"></div>
 
-      <div class="key">
+      <div class="yearview" id="yearView" hidden></div>
+
+      <div class="key" id="calKey">
         <span><i class="warm"></i>echte Vorhersage (bis Tag 16)</span>
         <span><i class="clim"></i>beste Schätzung aus der Statistik</span>
         <span><i style="background:var(--fill-soft)"></i>vergangene Tage: gemessener Wert</span>
@@ -2138,6 +2183,100 @@ function renderCalendar(days, months) {
   }
 }
 
+/**
+ * Jahresansicht: zwölf Monatszeilen auf einer gemeinsamen Temperaturachse.
+ *
+ * 360 Tageszellen sind kein Überblick, sondern eine Zumutung — die Zahlen
+ * unterscheiden sich von Tag zu Tag kaum, und der Jahresgang, der eigentlich
+ * interessiert, verschwindet zwischen ihnen. Hier steht pro Monat, was ein
+ * typischer Tag bringt: die Spanne, in der die Höchsttemperatur an vier von
+ * fünf Tagen liegt, der erwartete Wert darin, und wie viele Regentage
+ * zusammenkommen.
+ */
+function renderYear(days) {
+  const box = $("yearView");
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+
+  const groups = new Map();
+  for (const d of days) {
+    if (d.date < today || d.tmax === null) continue;
+    const k = d.date.getFullYear() + "-" + d.date.getMonth();
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(d);
+  }
+
+  const months = [...groups.values()].slice(0, 12).map((ds) => {
+    const withClim = ds.filter((d) => d.clim && !Number.isNaN(d.clim.tmaxP10));
+    const probs = ds.filter((d) => d.rainProb !== null && !Number.isNaN(d.rainProb));
+    const full = new Date(ds[0].date.getFullYear(), ds[0].date.getMonth() + 1, 0).getDate();
+    return {
+      date: ds[0].date,
+      lo:  withClim.length ? mean(withClim.map((d) => d.clim.tmaxP10)) : NaN,
+      hi:  withClim.length ? mean(withClim.map((d) => d.clim.tmaxP90)) : NaN,
+      mid: mean(ds.map((d) => d.tmax)),
+      wet: probs.reduce((sum, d) => sum + d.rainProb, 0),
+      n: ds.length, full,
+      teil: ds.length < full,
+      fc: ds.filter((d) => d.source === "fc").length,
+    };
+  }).filter((m) => !Number.isNaN(m.lo) && !Number.isNaN(m.mid));
+
+  if (!months.length) { box.hidden = true; return; }
+
+  // Gemeinsame Achse, auf 5-Grad-Schritte gerundet
+  const lo = Math.floor(Math.min(...months.map((m) => m.lo)) / 5) * 5;
+  const hi = Math.ceil(Math.max(...months.map((m) => m.hi)) / 5) * 5;
+  const pos = (v) => ((v - lo) / (hi - lo)) * 100;
+
+  let ticks = "";
+  for (let t = lo + 5; t < hi; t += 5) ticks += '<span class="tick" style="left:' + pos(t) + '%"></span>';
+
+  let rows = "";
+  for (const m of months) {
+    const tip = tipHTML(MONL[m.date.getMonth()] + " " + m.date.getFullYear(),
+      m.fc ? "teils Vorhersage" : "aus 75 Jahren",
+      [["Höchstwert im Mittel", fmtNum(m.mid) + " °C"],
+       ["An 4 von 5 Tagen", fmtNum(m.lo, 0) + " bis " + fmtNum(m.hi, 0) + " °C"],
+       ["Regentage", fmtNum(m.wet, 0) + " von " + m.n],
+       ["Grundlage", m.fc ? m.fc + " Tage Vorhersage, Rest Statistik" : "reine Statistik", "soft"]],
+      { note: m.teil
+          ? "Der laufende Monat zählt nur seine verbleibenden " + m.n + " Tage."
+          : "Die Spanne ist keine Vorhersage, sondern die übliche Schwankung von Tag zu Tag." });
+
+    rows +=
+      '<div class="yrow"' + tipAttr(tip) + ">"
+      + '<span class="lbl">' + MON[m.date.getMonth()] + " " + m.date.getFullYear()
+        + (m.teil ? " *" : "") + "</span>"
+      + '<span class="tspan">' + ticks
+        + '<span class="rng" style="left:' + pos(m.lo) + "%;width:" + (pos(m.hi) - pos(m.lo)) + '%"></span>'
+        + '<span class="cap" style="left:' + pos(m.lo) + '%"></span>'
+        + '<span class="cap" style="left:calc(' + pos(m.hi) + '% - 1.5px)"></span>'
+        + '<span class="mid' + (m.fc ? "" : " clim") + '" style="left:calc('
+          + pos(m.mid) + '% - 2.5px)"></span></span>'
+      + '<span class="num">' + fmtNum(m.mid) + " °C</span>"
+      + '<span class="num soft">' + fmtNum(m.wet, 0) + "</span></div>";
+  }
+
+  box.innerHTML =
+    '<div class="chart">'
+    + '<div class="head"><span>Monat</span><span>Höchstwert an einem typischen Tag</span>'
+      + "<span>Ø</span><span>Regentage</span></div>"
+    + '<div class="rows">' + rows + "</div>"
+    + '<div class="axis"><span>' + lo + " °C</span><span>" + Math.round((lo + hi) / 2)
+      + " °C</span><span>" + hi + " °C</span></div></div>"
+    + '<div class="key">'
+      + '<span><i class="span"></i>Spanne, in der der Höchstwert an 4 von 5 Tagen liegt</span>'
+      + '<span><i class="warm" style="width:5px"></i>erwarteter Höchstwert, Vorhersage</span>'
+      + '<span><i class="clim" style="width:5px"></i>erwarteter Höchstwert, Statistik</span>'
+      + (months.some((m) => m.teil) ? "<span>* nur die verbleibenden Tage des Monats</span>" : "")
+      + "</div>";
+
+  const von = months[0].date, bis = months[months.length - 1].date;
+  $("calRange").innerHTML =
+    "Zeigt <b>" + months.length + " Monate</b>: " + MONL[von.getMonth()] + " " + von.getFullYear()
+    + " bis " + MONL[bis.getMonth()] + " " + bis.getFullYear() + " · Monatswerte statt Einzeltage";
+}
+
 function renderNextRain(days, hasForecast) {
   const box = $("nextRain");
   const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -2601,7 +2740,7 @@ function showError(title, detail) {
   $("errors").appendChild(el);
 }
 
-let STATE = { days: null, calMonths: 6 };
+let STATE = { days: null, calMonths: 6, calView: "days" };
 let busy = false;
 
 async function run(place) {
@@ -2669,7 +2808,7 @@ async function run(place) {
     renderAnswer(STATE.days, retro, !!fc, place);
     renderStanceProof(retro);
     renderGuessPanel(recent, analogOff, seasonalMap, STATE.days);
-    renderCalendar(STATE.days, STATE.calMonths);
+    setCalView(STATE.calView);
     renderRetro(retro);
     renderNextRain(STATE.days, !!fc);
     renderWeeks(STATE.days);
@@ -2733,14 +2872,22 @@ $("form").addEventListener("submit", async (ev) => {
   }
 });
 
-function setCalMonths(n) {
-  STATE.calMonths = n;
-  $("cal6").setAttribute("aria-pressed", String(n === 6));
-  $("cal12").setAttribute("aria-pressed", String(n === 12));
-  if (STATE.days) renderCalendar(STATE.days, n);
+/** Zwei Ansichten auf dieselben Daten: Tage im Detail oder das Jahr als Form. */
+function setCalView(view) {
+  STATE.calView = view;
+  const tage = view === "days";
+  $("calDays").setAttribute("aria-pressed", String(tage));
+  $("calYear").setAttribute("aria-pressed", String(!tage));
+  $("calMonths").hidden = !tage;
+  $("calKey").hidden = !tage;
+  $("yearView").hidden = tage;
+  hideTip();
+  if (!STATE.days) return;
+  if (tage) renderCalendar(STATE.days, STATE.calMonths);
+  else renderYear(STATE.days);
 }
-$("cal6").addEventListener("click", () => setCalMonths(6));
-$("cal12").addEventListener("click", () => setCalMonths(12));
+$("calDays").addEventListener("click", () => setCalView("days"));
+$("calYear").addEventListener("click", () => setCalView("year"));
 
 (async function init() {
   const q = new URLSearchParams(location.search).get("ort");
