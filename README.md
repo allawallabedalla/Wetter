@@ -71,6 +71,8 @@ Flächenkontrast, Typo-Gewicht und Weißraum.
 
 - **Warm** = gefüllte Fläche · **Kalt** = Schraffur · **Neutral** = Kontur
 - Icons ausschließlich als Inline-SVG, Strichstärke 1,5 px, keine Füllung
+- Tooltips sind eigene Elemente statt `title` — Kopfzeile, Wertzeilen und
+  optional ein Abweichungsbalken, im selben Schwarzweiß wie der Rest
 - Dunkelmodus invertiert die Flächen und folgt der Systemeinstellung
 
 ## Bekannte Einschränkungen

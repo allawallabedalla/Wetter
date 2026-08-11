@@ -290,6 +290,68 @@
     font-size: .87rem; background: var(--fill-soft);
   }
 
+  /* ── Tooltip ─────────────────────────────────────────────── */
+
+  [data-tip] { cursor: help; }
+
+  #tip {
+    position: fixed; left: 0; top: 0; z-index: 60;
+    width: max-content; max-width: 340px;
+    background: var(--paper); color: var(--ink);
+    border: 2px solid var(--line); padding: 12px 14px;
+    font-size: .8rem; line-height: 1.45;
+    pointer-events: none;
+  }
+  #tip .tip-h {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 14px;
+    font-size: .66rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    border-bottom: 1.5px solid var(--line); padding-bottom: 8px; margin-bottom: 10px;
+  }
+  #tip .nb { white-space: nowrap; }
+  #tip .tip-h .kind {
+    font-size: .56rem; font-weight: 700; letter-spacing: .12em; color: var(--mute);
+    border: 1px solid var(--rule); padding: 2px 5px; white-space: nowrap;
+  }
+  #tip .tip-rows {
+    display: grid; grid-template-columns: 1fr auto; gap: 5px 18px; align-items: baseline;
+  }
+  #tip .tip-rows .l { color: var(--mute); font-size: .75rem; }
+  #tip .tip-rows .v {
+    text-align: right; font-weight: 700; white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  #tip .tip-rows .v.mute { font-weight: 600; color: var(--mute); }
+
+  #tip .tip-track {
+    position: relative; height: 13px; margin-top: 12px; border: 1px solid var(--rule);
+  }
+  #tip .tip-track::before {
+    content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px;
+    width: 1px; background: var(--ink);
+  }
+  #tip .tip-track i { position: absolute; top: 1px; bottom: 1px; background: var(--ink); }
+  #tip .tip-track i.cold { background: transparent; background-image: var(--hatch); border: 1px solid var(--ink); }
+  #tip .tip-scale {
+    display: flex; justify-content: space-between; margin-top: 4px;
+    font-size: .6rem; color: var(--mute); font-variant-numeric: tabular-nums;
+  }
+
+  #tip .tip-n {
+    margin-top: 11px; padding-top: 9px; border-top: 1px solid var(--rule);
+    color: var(--mute); font-size: .73rem; max-width: 36ch;
+  }
+
+  #tip .arrow {
+    position: absolute; bottom: -6px; width: 10px; height: 10px; margin-left: -5px;
+    background: var(--paper);
+    border-right: 2px solid var(--line); border-bottom: 2px solid var(--line);
+    transform: rotate(45deg);
+  }
+  #tip.below .arrow {
+    bottom: auto; top: -6px;
+    border: none; border-left: 2px solid var(--line); border-top: 2px solid var(--line);
+  }
+
   /* ── Regenverlauf ────────────────────────────────────────── */
 
   .next-rain {
@@ -854,6 +916,8 @@ function linreg(x, y) {
 
 const fmtSigned = (v, d = 1) => (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(d).replace(".", ",");
 const fmtNum    = (v, d = 1) => v.toFixed(d).replace(".", ",").replace("-", "−");
+// Tausender mit schmalem Festabstand, wie im Fließtext der Seite
+const fmtInt    = (v) => String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, "\u00a0");
 const pad2      = (n) => String(n).padStart(2, "0");
 const iso       = (d) => d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
 
@@ -1537,7 +1601,8 @@ function buildDaySeries(doyData, forecast, months, guess) {
       rec.source = "clim";
       // Best Guess: Klimawert plus die auf die aktuellen Tendenzen
       // konditionierte Anomalie
-      const g = guess ? guess(new Date(d), lead) : { dT: 0, dR: 0 };
+      const g = guess ? guess(new Date(d), lead)
+                      : { dT: 0, dR: 0, wPers: 0, wSeas: 0, wAna: 0 };
       rec.adj = g;
       rec.tmax = clim.tmax + g.dT;
       rec.rainProb = Math.max(0.02, Math.min(0.98, clim.rainProb + g.dR));
@@ -1548,6 +1613,141 @@ function buildDaySeries(doyData, forecast, months, guess) {
   }
   return days;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Tooltip
+
+   Der native title-Tooltip kommt zu spät, bricht Zeilen nach Laune des
+   Betriebssystems und lässt sich nicht gestalten. Hier steht stattdessen
+   ein eigener: Kopfzeile, Wertzeilen, optional ein Abweichungsbalken und
+   eine Fußnote. Inhalt hängt als HTML an data-tip.
+   ═══════════════════════════════════════════════════════════════ */
+
+const TIP_PAD = 8;      // Mindestabstand zum Fensterrand
+const TIP_GAP = 10;     // Abstand zum Element
+const TIP_DELAY = 70;
+
+const escAttr = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;")
+                                .replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+/** Datum als Tooltip-Kopf; das Datum selbst bleibt zusammen, der Wochentag darf umbrechen. */
+const tipDate = (d) => DOWL[dowMon(d)] + ', <span class="nb">' + d.getDate() + ". "
+                     + MONL[d.getMonth()] + "</span>";
+
+/**
+ * Baut den Inhalt eines Tooltips.
+ *   head  – Titelzeile, optional { kind } als Einordnung rechts daneben
+ *   rows  – [[Beschriftung, Wert, Klasse?], …]
+ *   opts  – { bar: { value, max, unit }, note }
+ */
+function tipHTML(head, kind, rows, opts) {
+  const o = opts || {};
+  let h = '<div class="tip-h"><span>' + head + "</span>"
+        + (kind ? '<span class="kind">' + kind + "</span>" : "") + "</div>";
+
+  if (rows && rows.length) {
+    h += '<div class="tip-rows">';
+    for (const r of rows) {
+      h += '<span class="l">' + r[0] + '</span><span class="v'
+         + (r[2] ? " " + r[2] : "") + '">' + r[1] + "</span>";
+    }
+    h += "</div>";
+  }
+
+  if (o.bar) {
+    const v = o.bar.value, max = o.bar.max;
+    const w = Math.min(50, Math.abs(v) / max * 50);
+    h += '<div class="tip-track"><i class="' + (v >= 0 ? "warm" : "cold") + '" style="'
+       + (v >= 0 ? "left:50%;" : "right:50%;") + "width:" + w.toFixed(1) + '%"></i></div>'
+       + '<div class="tip-scale"><span>−' + fmtNum(max, 0) + " " + o.bar.unit
+       + "</span><span>0</span><span>+" + fmtNum(max, 0) + " " + o.bar.unit + "</span></div>";
+  }
+
+  if (o.note) h += '<div class="tip-n">' + o.note + "</div>";
+  return h;
+}
+
+/** Fertiges Attribut für Markup, das als String gebaut wird. */
+const tipAttr = (html) => ' data-tip="' + escAttr(html) + '"';
+
+const TIP = document.createElement("div");
+TIP.id = "tip";
+TIP.setAttribute("role", "tooltip");
+TIP.setAttribute("aria-hidden", "true");
+TIP.hidden = true;
+document.body.appendChild(TIP);
+
+let tipAnchor = null, tipTimer = 0;
+
+function placeTip(el) {
+  const a = el.getBoundingClientRect();
+  TIP.style.left = "0px";
+  TIP.style.top = "0px";
+  TIP.classList.remove("below");
+  const t = TIP.getBoundingClientRect();
+
+  let left = a.left + a.width / 2 - t.width / 2;
+  left = Math.max(TIP_PAD, Math.min(left, window.innerWidth - t.width - TIP_PAD));
+
+  let top = a.top - t.height - TIP_GAP;
+  if (top < TIP_PAD) {
+    top = a.bottom + TIP_GAP;
+    TIP.classList.add("below");
+  }
+  top = Math.min(top, window.innerHeight - t.height - TIP_PAD);
+
+  TIP.style.left = Math.round(left) + "px";
+  TIP.style.top = Math.round(top) + "px";
+
+  const arrow = TIP.querySelector(".arrow");
+  if (arrow) {
+    arrow.style.left =
+      Math.round(Math.max(13, Math.min(a.left + a.width / 2 - left, t.width - 13))) + "px";
+  }
+}
+
+function showTip(el) {
+  if (!el.isConnected || !el.dataset.tip) return;
+  tipAnchor = el;
+  TIP.innerHTML = el.dataset.tip + '<span class="arrow"></span>';
+  TIP.hidden = false;
+  placeTip(el);
+}
+
+function hideTip() {
+  clearTimeout(tipTimer);
+  tipAnchor = null;
+  TIP.hidden = true;
+}
+
+const tipTarget = (ev) => (ev.target && ev.target.closest)
+  ? ev.target.closest("[data-tip]") : null;
+
+document.addEventListener("pointerover", (ev) => {
+  if (ev.pointerType === "touch") return;          // Touch läuft über pointerdown
+  const el = tipTarget(ev);
+  if (!el || el === tipAnchor) return;
+  clearTimeout(tipTimer);
+  tipTimer = setTimeout(() => showTip(el), TIP_DELAY);
+});
+
+document.addEventListener("pointerout", (ev) => {
+  if (ev.pointerType === "touch") return;
+  const el = tipTarget(ev);
+  if (!el) return;
+  if (ev.relatedTarget && el.contains(ev.relatedTarget)) return;
+  hideTip();
+});
+
+document.addEventListener("pointerdown", (ev) => {
+  const el = tipTarget(ev);
+  if (ev.pointerType === "touch" && el && el !== tipAnchor) { showTip(el); return; }
+  hideTip();
+});
+
+document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") hideTip(); });
+window.addEventListener("scroll", hideTip, true);
+window.addEventListener("resize", hideTip);
 
 /* ═══════════════════════════════════════════════════════════════
    Darstellung
@@ -1605,26 +1805,34 @@ function renderCalendar(days, months) {
       // an diesem Tag gemacht hätte. Ohne Messwert bleibt die Zelle leer.
       if (d.past) {
         const r = d.retro;
+        const dayHead = tipDate(d.date);
         if (!r) {
           cell.className = "day pad";
-          cell.title = d.date.getDate() + ". " + MONL[d.date.getMonth()]
-            + " — noch kein Messwert: die Reanalyse erscheint mit rund "
-            + ARCHIVE_LAG + " Tagen Verzögerung.";
+          cell.dataset.tip = tipHTML(dayHead, "kein Messwert", null, {
+            note: "Die ERA5-Reanalyse erscheint mit rund " + ARCHIVE_LAG
+                + " Tagen Verzögerung. Der Tag ist vorbei, gemessen ist er noch nicht.",
+          });
           cell.innerHTML = '<span class="dnum">' + d.date.getDate() + "</span>";
           grid.appendChild(cell);
           continue;
         }
         const g = r.byLead.get(RETRO_LEAD);
         cell.className = "day past";
-        cell.title =
-          DOWL[dowMon(d.date)] + ", " + d.date.getDate() + ". " + MONL[d.date.getMonth()]
-          + " — gemessen: " + fmtNum(r.obs) + " °C"
-          + (r.prec === null ? "" : ", " + fmtNum(r.prec) + " mm")
-          + (g ? " · Best Guess mit " + RETRO_LEAD + " Tagen Vorlauf: " + fmtNum(g.model)
-                 + " °C (" + fmtSigned(g.errM) + " K)"
-                 + " · reine Klimatologie: " + fmtNum(r.clim) + " °C ("
-                 + fmtSigned(g.errC) + " K)"
-               : " · kein Rückblick verfügbar");
+        const pastRows = [["Gemessen", fmtNum(r.obs) + " °C"]];
+        if (r.prec !== null) pastRows.push(["Niederschlag", fmtNum(r.prec) + " mm"]);
+        if (g) {
+          pastRows.push(["Best Guess", fmtNum(g.model) + " °C"]);
+          pastRows.push(["Abweichung", fmtSigned(g.errM) + " K"]);
+          pastRows.push(["Reine Klimatologie",
+                         fmtNum(r.clim) + " °C · " + fmtSigned(g.errC) + " K", "mute"]);
+        }
+        cell.dataset.tip = tipHTML(dayHead, "gemessen", pastRows, g ? {
+          bar: { value: g.errM, max: 6, unit: "K" },
+          note: "Best Guess gerechnet am Stichtag " + RETRO_LEAD + " Tage davor. Der Balken "
+              + "in der Zelle zeigt dieselbe Abweichung: nach rechts zu warm, nach links "
+              + "zu kalt gerechnet.",
+        } : { note: "Für diesen Tag reicht die Messreihe nicht weit genug zurück, "
+                  + "um den Best Guess nachzurechnen." });
         cell.innerHTML =
           '<span class="dnum">' + d.date.getDate() + "</span>"
           + '<span class="temp">' + Math.round(r.obs) + "°</span>"
@@ -1641,16 +1849,32 @@ function renderCalendar(days, months) {
                      + (d.isToday ? " today" : "");
 
       const prob = (d.rainProb === null || Number.isNaN(d.rainProb)) ? 0 : d.rainProb;
-      const tip = d.source === "fc"
-        ? DOWL[dowMon(d.date)] + ", " + d.date.getDate() + ". " + MONL[d.date.getMonth()]
-          + " — Vorhersage: " + (d.tmax === null ? "?" : fmtNum(d.tmax) + " °C")
-          + ", " + Math.round(prob * 100) + " % Regenwahrscheinlichkeit"
-          + (d.prec !== null ? ", " + fmtNum(d.prec) + " mm" : "")
-        : DOWL[dowMon(d.date)] + ", " + d.date.getDate() + ". " + MONL[d.date.getMonth()]
-          + " — Erwartungswert aus " + (d.clim ? d.clim.n : 0) + " Messtagen: "
-          + (d.tmax === null ? "?" : fmtNum(d.tmax) + " °C")
-          + ", an " + Math.round(prob * 100) + " % der Jahre nass";
-      cell.title = tip;
+      const head = tipDate(d.date);
+      const temp = d.tmax === null ? "—" : fmtNum(d.tmax) + " °C";
+
+      if (d.source === "fc") {
+        const rows = [
+          ["Höchsttemperatur", temp],
+          ["Regenwahrscheinlichkeit", Math.round(prob * 100) + " %"],
+        ];
+        if (d.prec !== null) rows.push(["Niederschlag", fmtNum(d.prec) + " mm"]);
+        cell.dataset.tip = tipHTML(head, "Vorhersage", rows, {
+          note: "Echte Wettervorhersage — Tag " + (d.lead + 1) + " von 16.",
+        });
+      } else {
+        const rows = [["Erwarteter Höchstwert", temp]];
+        if (d.adj) {
+          rows.push(["davon Klimawert", fmtNum(d.climTmax) + " °C", "mute"]);
+          rows.push(["davon aktuelle Tendenz", fmtSigned(d.adj.dT) + " K"]);
+        }
+        rows.push(["Nasse Jahre", Math.round(prob * 100) + " %"]);
+        rows.push(["Datenbasis", fmtInt(d.clim ? d.clim.n : 0) + " Messtage", "mute"]);
+        cell.dataset.tip = tipHTML(head, "Erwartungswert", rows, {
+          note: "Keine Vorhersage. Der Klimawert dieses Kalendertags, verschoben um die "
+              + "aktuellen Tendenzen — in " + d.lead + " Tagen wiegt die Persistenz "
+              + Math.round(d.adj ? d.adj.wPers * 100 : 0) + " %.",
+        });
+      }
 
       cell.innerHTML =
         '<span class="dnum">' + d.date.getDate() + "</span>"
@@ -1736,9 +1960,15 @@ function renderWeeks(days) {
   weeks.forEach((w) => {
     const el = document.createElement("div");
     el.className = "wk" + (w.isFc ? "" : " clim");
-    el.title = "Woche ab " + w.start.getDate() + ". " + MONL[w.start.getMonth()]
-             + " — " + Math.round(w.prob * 100) + " % Regenwahrscheinlichkeit pro Tag"
-             + (w.isFc ? " (Vorhersage)" : " (Klimatologie)");
+    el.dataset.tip = tipHTML(
+      'Woche ab <span class="nb">' + w.start.getDate() + ". "
+        + MONL[w.start.getMonth()] + "</span>",
+      w.isFc ? "Vorhersage" : "Klimatologie",
+      [["Regenwahrscheinlichkeit", Math.round(w.prob * 100) + " % pro Tag"],
+       ["Erwartete Regentage", fmtNum(w.prob * 7) + " von 7"]],
+      { note: w.isFc
+          ? "Diese Woche liegt noch in der Reichweite der echten Vorhersage."
+          : "Häufigkeit aus 75 Jahren Messreihe — keine Aussage über diese eine Woche." });
     el.innerHTML = '<b style="height:' + ((w.prob / maxProb) * 100).toFixed(1) + '%"></b>';
     bars.appendChild(el);
 
@@ -1949,14 +2179,24 @@ function renderValidation(v, anchor) {
 const dmy = (d) => d.getDate() + ". " + MON[d.getMonth()];
 
 /** Ein Streifen aus Tagesfehlern, an der Nulllinie gespiegelt. */
-function errorLane(title, note, days, pick, scale, klass) {
+function errorLane(title, note, days, pick, scale, klass, kind, lead) {
   let bars = "";
   for (const r of days) {
     const e = pick(r);
     if (e === null || e === undefined || Number.isNaN(e)) { bars += '<span class="d"></span>'; continue; }
     const h = Math.min(50, Math.abs(e) / scale * 50);
     const pos = e >= 0 ? "bottom:50%;" : "top:50%;";
-    bars += '<span class="d" title="' + dmy(r.date) + ": " + fmtSigned(e) + ' K"><b style="'
+    const tip = tipHTML(
+      tipDate(r.date), kind,
+      [["Gemessen", fmtNum(r.obs) + " °C"],
+       [kind === "Klimatologie" ? "Klimawert" : "Best Guess",
+        fmtNum(r.obs + e) + " °C"],
+       ["Abweichung", fmtSigned(e) + " K"]],
+      { bar: { value: e, max: scale, unit: "K" },
+        note: kind === "Klimatologie"
+          ? "Der reine Klimawert dieses Kalendertags — die Vergleichslatte."
+          : "Gerechnet am Stichtag " + lead + " Tage davor, ohne jede spätere Information." });
+    bars += '<span class="d"' + tipAttr(tip) + '><b style="'
           + pos + "height:" + h.toFixed(1) + '%"></b></span>';
   }
   return '<div class="lane' + (klass ? " " + klass : "") + '">'
@@ -1998,10 +2238,10 @@ function renderRetro(retro) {
   $("retroStrip").innerHTML =
     errorLane("Best Guess · " + h.lead + " Tage Vorlauf",
               "Ø " + fmtNum(h.maeM) + " K",
-              shown, (r) => r.byLead.get(h.lead).errM, scale, "")
+              shown, (r) => r.byLead.get(h.lead).errM, scale, "", "Best Guess", h.lead)
     + errorLane("Reine Klimatologie · derselbe Zeitraum",
                 "Ø " + fmtNum(h.maeC) + " K",
-                shown, (r) => r.byLead.get(h.lead).errC, scale, "clim");
+                shown, (r) => r.byLead.get(h.lead).errC, scale, "clim", "Klimatologie", h.lead);
 
   let rows = "<tr><th>Vorlauf</th><th>Best Guess</th><th>Klimatologie</th>"
            + "<th>Skill</th><th>Näher dran</th><th>Regen</th></tr>";
