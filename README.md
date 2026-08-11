@@ -22,10 +22,14 @@ Ganz oben stehen vor allen Abschnitten zwei ungezählte Blöcke: eine
 mittlerer Fehler des Modells im Rückblick — je mit Sprungmarke) und die
 **Einordnung**, wogegen sich die Seite messen lässt.
 
-Die Positionierung dort ist bewusst eng gefasst und nachprüfbar: Für die ersten
-zwei Wochen rechnen alle Wetterseiten mit denselben öffentlichen Modellen, hier
-ist nichts genauer. Der Unterschied fängt bei Tag 17 an — und der behauptete
-Vorsprung ist nicht „genauer", sondern „sagt dazu, wie oft es gestimmt hat".
+Die Einordnung ist in Alltagssprache geschrieben und kommt ohne Fachbegriffe
+aus — keine Reanalyse, kein Skill, kein Ensemble. Die Positionierung ist bewusst
+eng gefasst und nachprüfbar: Für die ersten zwei Wochen rechnen alle
+Wetterseiten mit denselben öffentlichen Daten, hier ist nichts genauer. Der
+Unterschied fängt danach an, und der behauptete Vorsprung ist nicht „genauer",
+sondern „sagt dazu, wie oft es gestimmt hat". Das dritte Feld behauptet das
+nicht, sondern zeigt es: Es wird aus dem Rückblick gefüllt und nennt den
+gemessenen Fehler der letzten 120 Tage.
 
 | # | Abschnitt | Inhalt |
 |---|-----------|--------|

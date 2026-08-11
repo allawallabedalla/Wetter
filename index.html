@@ -585,12 +585,14 @@
     <!-- ═══ Kurzantwort — die drei Fakten, bevor die Rechnung anfängt ═══ -->
     <div class="answer" id="answer" hidden></div>
 
-    <!-- ═══ Einordnung — wogegen sich die Seite messen lässt ═══ -->
+    <!-- ═══ Einordnung — in Alltagssprache, mit nachgerechnetem Beleg ═══ -->
     <div class="stance">
       <p class="claim">
-        Für die ersten zwei Wochen sind alle Wetterseiten ungefähr gleich gut — sie
-        rechnen mit denselben Modellen. <b>Der Unterschied fängt bei Tag 17 an:
-        Diese Seite ist die einzige, die dazusagt, wie oft sie richtig lag.</b>
+        Für die nächsten zwei Wochen ist jede Wetter-App ungefähr so gut wie diese
+        Seite — alle rechnen mit denselben Daten. <b>Der Unterschied fängt danach an.</b>
+        Wo andere Seiten Temperaturen für einzelne Tage in sechs Wochen anzeigen, steht
+        hier, wie warm es an diesem Kalendertag üblicherweise ist — und wie gut das
+        zuletzt gepasst hat.
       </p>
 
       <div class="cols">
@@ -600,12 +602,11 @@
             <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
             </svg>
-            Tag 1 bis 16
+            Die nächsten 16 Tage
           </h3>
-          <p>Echte Wettervorhersage aus den <b>öffentlichen Modellen von DWD und
-          ECMWF</b>, abgerufen über Open-Meteo. Dieselbe Grundlage, aus der auch
-          Wetter-Apps ihre Werte ziehen — hier nicht genauer, aber auch nicht
-          schlechter.</p>
+          <p>Die Vorhersage kommt vom <b>Deutschen Wetterdienst</b> und vom
+          europäischen Wetterzentrum — dieselben Daten, aus denen auch die Wetter-App
+          auf dem Handy ihre Werte zieht. Öffentlich zugänglich und kostenlos.</p>
         </div>
 
         <div class="c">
@@ -613,12 +614,13 @@
             <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M3 20h18M6 20v-7M11 20V8M16 20v-4M21 20v-9"/>
             </svg>
-            Ab Tag 17
+            Alles danach
           </h3>
-          <p>Wo andere Seiten <b>42-Tage-Trends</b> mit tagesgenauen Gradzahlen
-          anzeigen, steht hier der Erwartungswert aus 75 Jahren Messreihe für genau
-          diesen Kalendertag, verschoben um die aktuelle Lage. Mit Bandbreite statt
-          Scheingenauigkeit.</p>
+          <p>Für einen einzelnen Tag in sechs Wochen kann niemand eine Temperatur
+          nennen — das ist eine <b>Grenze der Physik</b>, keine Frage besserer
+          Technik. Statt eine Zahl zu erfinden, steht hier, wie warm es an genau
+          diesem Kalendertag in 75 Jahren war und wohin die aktuelle Wetterlage das
+          verschiebt.</p>
         </div>
 
         <div class="c">
@@ -626,19 +628,20 @@
             <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>
             </svg>
-            Immer nachprüfbar
+            Nachgerechnet
           </h3>
-          <p>Jede Behauptung tritt gegen die simpelste denkbare Vorhersage an —
-          <b>„es wird normal"</b>. Das Ergebnis steht in Abschnitt 02 und 07, auch
-          dann, wenn das Verfahren dabei verliert.</p>
+          <p id="stanceProof">Diese Seite rechnet ihre eigene Vorhersage für die
+          vergangenen Monate noch einmal — und vergleicht sie mit dem, was wirklich
+          gemessen wurde. Das Ergebnis steht weiter unten, <b>auch wenn es schlecht
+          ausfällt</b>.</p>
         </div>
 
       </div>
 
       <div class="src">
-        <span><b>Messhistorie</b>ERA5-Reanalyse des ECMWF, Tageswerte seit 1950</span>
-        <span><b>Saisonmodell</b>NOAA CFSv2, roh und unkorrigiert</span>
-        <span><b>Rechnung</b>vollständig im Browser — kein Konto, kein Tracking, kein Backend</span>
+        <span><b>Vorhersage</b>Deutscher Wetterdienst und europäisches Wetterzentrum (ECMWF), über den freien Dienst Open-Meteo</span>
+        <span><b>Messwerte</b>75 Jahre Tageswerte für diesen Ort, aus dem Archiv des europäischen Wetterzentrums</span>
+        <span><b>Nutzung</b>kostenlos, ohne Konto, ohne Werbung — nichts wird gespeichert</span>
       </div>
     </div>
 
@@ -1956,6 +1959,22 @@ function renderAnswer(days, retro, hasForecast, place) {
     + '<div class="acols">' + cols.join("") + "</div>";
 }
 
+/**
+ * Der Beweis in der Einordnung. Ohne Zahlen ist „wir prüfen uns selbst" nur
+ * eine weitere Behauptung — hier steht das Ergebnis, in Alltagssprache.
+ */
+function renderStanceProof(retro) {
+  if (!retro || !retro.ok || !retro.head) return;   // Statischer Text bleibt stehen
+  const h = retro.head;
+  const better = Math.round(h.better * 100);
+  $("stanceProof").innerHTML =
+    "Für die letzten " + retro.days.length + " Tage wurde die eigene Vorhersage noch "
+    + "einmal gerechnet und mit der Messung verglichen: im Schnitt <b>"
+    + fmtNum(h.maeM) + " Grad daneben</b>. An <b>" + better + " von 100 Tagen</b> lag "
+    + "sie näher dran als der reine Durchschnitt aus 75 Jahren. Wäre es umgekehrt "
+    + "ausgefallen, stünde das genauso hier.";
+}
+
 function renderCalendar(days, months) {
   const box = $("calMonths");
   box.innerHTML = "";
@@ -2621,6 +2640,7 @@ async function run(place) {
     $("out").hidden = false;
 
     renderAnswer(STATE.days, retro, !!fc, place);
+    renderStanceProof(retro);
     renderGuessPanel(recent, analogOff, seasonalMap, STATE.days);
     renderCalendar(STATE.days, STATE.calMonths);
     renderRetro(retro);
