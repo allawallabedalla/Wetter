@@ -172,6 +172,35 @@
   }
   .answer .acol:hover .go { background: var(--ink); color: var(--paper); }
 
+  /* ── Einordnung ──────────────────────────────────────────── */
+
+  .stance { border: 2px solid var(--line); margin: 26px 0 0; }
+  .stance .claim {
+    padding: 18px 20px; border-bottom: 1.5px solid var(--line);
+    font-size: 1rem; line-height: 1.5;
+  }
+  .stance .claim b { font-weight: 700; }
+  .stance .cols {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(238px, 1fr));
+    gap: 1px; background: var(--rule);
+  }
+  .stance .c { background: var(--paper); padding: 20px 18px; }
+  .stance .c h3 {
+    margin: 0 0 11px; font-size: .66rem; font-weight: 700; letter-spacing: .13em;
+    text-transform: uppercase; display: flex; align-items: center; gap: 9px;
+  }
+  .stance .c p { margin: 0; font-size: .85rem; color: var(--mute); }
+  .stance .c p b { color: var(--ink); font-weight: 600; }
+  .stance .src {
+    border-top: 1.5px solid var(--line); background: var(--fill-soft);
+    padding: 13px 20px; font-size: .75rem; color: var(--mute);
+    display: flex; flex-wrap: wrap; gap: 7px 26px;
+  }
+  .stance .src b {
+    color: var(--ink); font-weight: 700; font-size: .61rem;
+    letter-spacing: .13em; text-transform: uppercase; margin-right: 7px;
+  }
+
   /* ── Abschnitte ──────────────────────────────────────────── */
 
   html { scroll-behavior: smooth; }
@@ -527,9 +556,10 @@
   <header class="hero">
     <h1>Jeder Tag im Kalender — und wann wieder Regen kommt</h1>
     <p class="lead">
-      Die nächsten 16 Tage als echte Vorhersage, danach der aus 75 Jahren Messhistorie
-      abgeleitete Erwartungswert für jeden einzelnen Kalendertag. Wo die Vorhersage
-      aufhört und die Statistik anfängt, ist im Design sichtbar — nicht versteckt.
+      Die nächsten 16 Tage als echte Vorhersage — dieselben öffentlichen Modelle, aus
+      denen auch Wetter-Apps ihre Werte ziehen. Danach der Erwartungswert aus 75 Jahren
+      Messreihe für jeden einzelnen Kalendertag, verschoben um die aktuelle Lage. Und,
+      anders als sonst im Netz: nachgerechnet, wie oft das zuletzt gestimmt hat.
     </p>
 
     <form class="place" id="form">
@@ -555,6 +585,63 @@
     <!-- ═══ Kurzantwort — die drei Fakten, bevor die Rechnung anfängt ═══ -->
     <div class="answer" id="answer" hidden></div>
 
+    <!-- ═══ Einordnung — wogegen sich die Seite messen lässt ═══ -->
+    <div class="stance">
+      <p class="claim">
+        Für die ersten zwei Wochen sind alle Wetterseiten ungefähr gleich gut — sie
+        rechnen mit denselben Modellen. <b>Der Unterschied fängt bei Tag 17 an:
+        Diese Seite ist die einzige, die dazusagt, wie oft sie richtig lag.</b>
+      </p>
+
+      <div class="cols">
+
+        <div class="c">
+          <h3>
+            <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+            </svg>
+            Tag 1 bis 16
+          </h3>
+          <p>Echte Wettervorhersage aus den <b>öffentlichen Modellen von DWD und
+          ECMWF</b>, abgerufen über Open-Meteo. Dieselbe Grundlage, aus der auch
+          Wetter-Apps ihre Werte ziehen — hier nicht genauer, aber auch nicht
+          schlechter.</p>
+        </div>
+
+        <div class="c">
+          <h3>
+            <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 20h18M6 20v-7M11 20V8M16 20v-4M21 20v-9"/>
+            </svg>
+            Ab Tag 17
+          </h3>
+          <p>Wo andere Seiten <b>42-Tage-Trends</b> mit tagesgenauen Gradzahlen
+          anzeigen, steht hier der Erwartungswert aus 75 Jahren Messreihe für genau
+          diesen Kalendertag, verschoben um die aktuelle Lage. Mit Bandbreite statt
+          Scheingenauigkeit.</p>
+        </div>
+
+        <div class="c">
+          <h3>
+            <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>
+            </svg>
+            Immer nachprüfbar
+          </h3>
+          <p>Jede Behauptung tritt gegen die simpelste denkbare Vorhersage an —
+          <b>„es wird normal"</b>. Das Ergebnis steht in Abschnitt 02 und 07, auch
+          dann, wenn das Verfahren dabei verliert.</p>
+        </div>
+
+      </div>
+
+      <div class="src">
+        <span><b>Messhistorie</b>ERA5-Reanalyse des ECMWF, Tageswerte seit 1950</span>
+        <span><b>Saisonmodell</b>NOAA CFSv2, roh und unkorrigiert</span>
+        <span><b>Rechnung</b>vollständig im Browser — kein Konto, kein Tracking, kein Backend</span>
+      </div>
+    </div>
+
     <!-- ═══ 01 · Tageskalender ═══ -->
     <section id="secCal">
       <div class="sec-head">
@@ -563,12 +650,9 @@
       </div>
       <p class="sec-sub" id="calSub">
         Für jeden Tag die Tageshöchsttemperatur und die Regenwahrscheinlichkeit.
-        Bis Tag 16 ist das eine echte Wettervorhersage. Danach steht dort <b>kein
-        blanker Mittelwert</b>, sondern ein Best Guess: der Klimawert des Kalendertags,
-        verschoben um die aktuellen Tendenzen — Persistenz der letzten Wochen,
-        Saisonmodell und die Verläufe ähnlicher Jahre. Woraus sich das zusammensetzt,
-        steht direkt darunter; wie gut es zuletzt funktioniert hat, in Abschnitt 02;
-        was es über die gesamte Historie taugt, in Abschnitt 07.
+        Ab Tag 17 steht dort <b>kein blanker Mittelwert</b>, sondern ein Best Guess:
+        der Klimawert des Kalendertags, verschoben um die aktuellen Tendenzen.
+        Woraus sich diese Verschiebung zusammensetzt, steht direkt darunter.
       </p>
 
       <div class="panel" id="guessPanel"></div>

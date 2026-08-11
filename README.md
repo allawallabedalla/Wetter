@@ -17,9 +17,15 @@ den Open-Meteo-APIs geladen und im Browser ausgewertet.
 
 ## Aufbau der Seite
 
-Ganz oben steht vor allen Abschnitten eine **Kurzantwort**: Temperaturtendenz
-der nächsten 30 Tage, nächster Regentag, mittlerer Fehler des Modells im
-Rückblick — drei Zahlen mit Sprungmarke in den jeweiligen Abschnitt.
+Ganz oben stehen vor allen Abschnitten zwei ungezählte Blöcke: eine
+**Kurzantwort** (Temperaturtendenz der nächsten 30 Tage, nächster Regentag,
+mittlerer Fehler des Modells im Rückblick — je mit Sprungmarke) und die
+**Einordnung**, wogegen sich die Seite messen lässt.
+
+Die Positionierung dort ist bewusst eng gefasst und nachprüfbar: Für die ersten
+zwei Wochen rechnen alle Wetterseiten mit denselben öffentlichen Modellen, hier
+ist nichts genauer. Der Unterschied fängt bei Tag 17 an — und der behauptete
+Vorsprung ist nicht „genauer", sondern „sagt dazu, wie oft es gestimmt hat".
 
 | # | Abschnitt | Inhalt |
 |---|-----------|--------|
