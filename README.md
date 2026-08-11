@@ -33,7 +33,7 @@ gemessenen Fehler der letzten 120 Tage.
 
 | # | Abschnitt | Inhalt |
 |---|-----------|--------|
-| 01 | Tageskalender | Echte 16-Tage-Vorhersage, danach der Beste Schätzung: Klimawert des Kalendertags, verschoben um die aktuellen Tendenzen |
+| 01 | Tageskalender | Echte 16-Tage-Vorhersage, danach die beste Schätzung: Klimawert des Kalendertags, verschoben um die aktuellen Tendenzen. Umschaltbar auf eine Jahresansicht mit zwölf Monatszeilen auf gemeinsamer Temperaturachse |
 | 02 | Rückblick | Dieselbe Schätzung, für die letzten 120 Tage nachgerechnet und gegen die Messung gestellt |
 | 03 | Regenverlauf | Nächster Regentag aus der laufenden Vorhersage, danach die Regenwahrscheinlichkeit Woche für Woche |
 | 04 | Aktuelle Lage | Gemessene Monatsabweichungen der letzten 14 Monate gegenüber dem Normalwert 1991–2020 |
