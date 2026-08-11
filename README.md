@@ -33,8 +33,8 @@ gemessenen Fehler der letzten 120 Tage.
 
 | # | Abschnitt | Inhalt |
 |---|-----------|--------|
-| 01 | Tageskalender | Echte 16-Tage-Vorhersage, danach der Best Guess: Klimawert des Kalendertags, verschoben um die aktuellen Tendenzen |
-| 02 | Rückblick | Derselbe Best Guess, für die letzten 120 Tage nachgerechnet und gegen die Messung gestellt |
+| 01 | Tageskalender | Echte 16-Tage-Vorhersage, danach der Beste Schätzung: Klimawert des Kalendertags, verschoben um die aktuellen Tendenzen |
+| 02 | Rückblick | Dieselbe Schätzung, für die letzten 120 Tage nachgerechnet und gegen die Messung gestellt |
 | 03 | Regenverlauf | Nächster Regentag aus der laufenden Vorhersage, danach die Regenwahrscheinlichkeit Woche für Woche |
 | 04 | Aktuelle Lage | Gemessene Monatsabweichungen der letzten 14 Monate gegenüber dem Normalwert 1991–2020 |
 | 05 | Saisonprognose | Ensemble-Monatsmittel eines Saisonvorhersagemodells, mit Streuung und Ensemble-Einigkeit |
@@ -48,7 +48,7 @@ simpelste denkbare Vorhersage.
 
 ## Rückblick
 
-Abschnitt 02 rechnet den Best Guess für jeden der letzten 120 Tage neu — mit
+Abschnitt 02 rechnet die beste Schätzung für jeden der letzten 120 Tage neu — mit
 14, 30, 60 und 90 Tagen Vorlauf — und stellt ihn der gemessenen
 Tageshöchsttemperatur gegenüber. Damit der Test nicht schummelt:
 
@@ -66,7 +66,7 @@ Tageshöchsttemperatur gegenüber. Damit der Test nicht schummelt:
 120 Tage an einem Ort sind eine Stichprobe, kein Beweis — der belastbarere
 Test über die gesamte Historie steht in Abschnitt 07. Im Kalender zeigen
 vergangene Tage entsprechend den gemessenen Wert; der Balken darunter ist
-dort der Fehler, den der Best Guess an diesem Tag gemacht hätte.
+dort der Fehler, den die beste Schätzung an diesem Tag gemacht hätte.
 
 ## Geplante Datenquellen
 

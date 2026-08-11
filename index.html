@@ -314,7 +314,7 @@
   .day.today .dnum { color: var(--ink); font-weight: 700; }
   .day .wet { position: absolute; top: 3px; right: 4px; width: 5px; height: 5px; background: var(--ink); }
 
-  /* Vergangene Tage: gemessener Wert, darunter der Fehler des Best Guess */
+  /* Vergangene Tage: gemessener Wert, darunter der Fehler der besten Schätzung */
   .day.past { background: var(--fill-soft); }
   .day.past .temp { font-weight: 700; }
   .day .err {
@@ -557,7 +557,7 @@
     <h1>Jeder Tag im Kalender — und wann wieder Regen kommt</h1>
     <p class="lead">
       Die nächsten 16 Tage als echte Vorhersage — dieselben öffentlichen Modelle, aus
-      denen auch Wetter-Apps ihre Werte ziehen. Danach der Erwartungswert aus 75 Jahren
+      denen auch Wetter-Apps ihre Werte ziehen. Danach die beste Schätzung aus 75 Jahren
       Messreihe für jeden einzelnen Kalendertag, verschoben um die aktuelle Lage. Und,
       anders als sonst im Netz: nachgerechnet, wie oft das zuletzt gestimmt hat.
     </p>
@@ -653,7 +653,7 @@
       </div>
       <p class="sec-sub" id="calSub">
         Für jeden Tag die Tageshöchsttemperatur und die Regenwahrscheinlichkeit.
-        Ab Tag 17 steht dort <b>kein blanker Mittelwert</b>, sondern ein Best Guess:
+        Ab Tag 17 steht dort <b>kein blanker Mittelwert</b>, sondern die <b>beste Schätzung</b>:
         der Klimawert des Kalendertags, verschoben um die aktuellen Tendenzen.
         Woraus sich diese Verschiebung zusammensetzt, steht direkt darunter.
       </p>
@@ -669,9 +669,9 @@
 
       <div class="key">
         <span><i class="warm"></i>echte Vorhersage (bis Tag 16)</span>
-        <span><i class="clim"></i>statistischer Erwartungswert</span>
+        <span><i class="clim"></i>beste Schätzung aus der Statistik</span>
         <span><i style="background:var(--fill-soft)"></i>vergangene Tage: gemessener Wert</span>
-        <span><i style="height:6px;background:var(--ink)"></i>Balken unten = Regenwahrscheinlichkeit, bei vergangenen Tagen der Fehler des Best Guess</span>
+        <span><i style="height:6px;background:var(--ink)"></i>Balken unten = Regenwahrscheinlichkeit, bei vergangenen Tagen der Fehler der besten Schätzung</span>
         <span><i style="width:8px;height:8px;background:var(--ink);border:none"></i>Regentag (≥ 1 mm)</span>
       </div>
 
@@ -682,7 +682,7 @@
         <div>
           <b>Die schraffierten Tage sind keine Vorhersage.</b> Ob es am 14. Oktober regnet,
           weiß heute niemand — das ist keine Frage besserer Modelle, sondern eine physikalische
-          Grenze bei etwa zwei Wochen. Der Best Guess verschiebt dort nur den <em>Erwartungswert</em>:
+          Grenze bei etwa zwei Wochen. Die beste Schätzung verschiebt dort nur den <em>Klimawert</em>:
           „an diesem Kalendertag war es in 41 % der Jahre nass, und die aktuelle Lage spricht
           für etwas mehr“. Das ist eine belastbare Aussage — nur eben eine andere als ein
           Wetterbericht. Wie groß die Verschiebung ausfällt, hängt davon ab, wie weit der Tag
@@ -711,7 +711,7 @@
       <div class="retro" id="retroStrip"></div>
 
       <div class="key">
-        <span><i class="warm"></i>Fehler des Best Guess</span>
+        <span><i class="warm"></i>Fehler der besten Schätzung</span>
         <span><i class="clim"></i>Fehler der reinen Klimatologie</span>
         <span>Balken nach oben = zu warm vorhergesagt, nach unten = zu kalt</span>
       </div>
@@ -823,10 +823,10 @@
     <section id="secVal">
       <div class="sec-head">
         <span class="num">07</span>
-        <div><h2>Wie verlässlich ist der Best Guess?</h2></div>
+        <div><h2>Wie verlässlich ist die beste Schätzung?</h2></div>
       </div>
       <p class="sec-sub">
-        Der Best Guess verschiebt den Erwartungswert — aber hilft das überhaupt? Hier tritt
+        Die beste Schätzung verschiebt den Klimawert — aber hilft das überhaupt? Hier tritt
         jeder Baustein einzeln gegen die reine Klimatologie an, nachgerechnet für jedes Jahr
         der Historie. Jede Vorhersage wird dabei nur aus den <em>übrigen</em> Jahren gebildet.
         Skill ist der Vorsprung gegenüber „es wird normal“; negativ heißt schlechter als
@@ -879,7 +879,7 @@
         <div class="cell">
           <h3>
             <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20L10 8l4 6 6-10"/><path d="M4 20h16"/></svg>
-            Best Guess statt Mittelwert
+            Beste Schätzung statt Mittelwert
           </h3>
           <p>Der Klimawert allein ist tendenzblind. Er wird deshalb um eine Anomalie
           verschoben, die sich aus drei Quellen speist — gewichtet danach, wie weit der
@@ -937,7 +937,7 @@
             <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 109-9 9 9 0 00-6.4 2.6L3 8"/><path d="M3 3v5h5"/></svg>
             Rückblick
           </h3>
-          <p>Für jeden der letzten <b>120 Tage</b> wird der Best Guess mit 14, 30, 60 und
+          <p>Für jeden der letzten <b>120 Tage</b> wird die beste Schätzung mit 14, 30, 60 und
           90 Tagen Vorlauf neu gerechnet. Maßgeblich ist dabei nur, was am jeweiligen
           Stichtag vorlag — samt der <b>sechs Tage Verzögerung</b>, mit der die Reanalyse
           erscheint.</p>
@@ -1212,7 +1212,7 @@ function buildDoyClimatology(daily, targetYear, cutoff) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Best Guess — Konditionierung auf die aktuellen Tendenzen
+   Beste Schätzung — Klimawert, konditioniert auf die aktuellen Tendenzen
 
    Der reine Klimawert ist der Mittelwert über alle Jahre und damit
    bewusst tendenzblind. Hier wird er um eine Anomalie verschoben,
@@ -1290,7 +1290,7 @@ function seasonalOffsets(fcMonths, clim) {
  * Setzt die Bausteine zu einer Anomalie pro Tag zusammen.
  * Persistenz dominiert kurzfristig und klingt ab; danach übernehmen
  * Saisonmodell und Analogjahre. Ohne verfügbare Quelle bleibt der
- * reine Klimawert stehen — dann ist der Best Guess eben die Klimatologie.
+ * reine Klimawert stehen — dann ist die beste Schätzung eben die Klimatologie.
  */
 function makeBestGuess(recent, analog, seasonal) {
   return function (date, leadDays) {
@@ -1321,7 +1321,7 @@ function makeBestGuess(recent, analog, seasonal) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Rückblick — derselbe Best Guess, nachgerechnet gegen die Messung
+   Rückblick — dieselbe Schätzung, nachgerechnet gegen die Messung
 
    Die Validierung in Abschnitt 07 prüft die Bausteine auf Monatsebene
    über die ganze Historie. Hier läuft der umgekehrte Test: der komplette
@@ -1582,7 +1582,7 @@ function findAnalogs(z, anomDet, anchor, k, requireTarget) {
 }
 
 /**
- * Vergleicht die Bausteine des Best Guess gegeneinander — jeder streng
+ * Vergleicht die Bausteine der besten Schätzung gegeneinander — jeder streng
  * out-of-sample. Die Dämpfung der Persistenz wird dabei nicht geraten,
  * sondern für jeden Fall aus den übrigen Jahren geschätzt.
  */
@@ -1736,7 +1736,7 @@ function buildDaySeries(doyData, forecast, months, guess) {
       rec.wet = (fc.prec !== null && fc.prec >= WET_MM);
     } else if (clim) {
       rec.source = "clim";
-      // Best Guess: Klimawert plus die auf die aktuellen Tendenzen
+      // Beste Schätzung: Klimawert plus die auf die aktuellen Tendenzen
       // konditionierte Anomalie
       const g = guess ? guess(new Date(d), lead)
                       : { dT: 0, dR: 0, wPers: 0, wSeas: 0, wAna: 0 };
@@ -2023,7 +2023,7 @@ function renderCalendar(days, months) {
 
       // Vergangene Tage zeigen die Messung, nicht den Erwartungswert — dort
       // steht das Wetter fest. Der Balken unten ist deshalb auch keine
-      // Regenwahrscheinlichkeit mehr, sondern der Fehler, den der Best Guess
+      // Regenwahrscheinlichkeit mehr, sondern der Fehler, den die beste Schätzung
       // an diesem Tag gemacht hätte. Ohne Messwert bleibt die Zelle leer.
       if (d.past) {
         const r = d.retro;
@@ -2043,18 +2043,18 @@ function renderCalendar(days, months) {
         const pastRows = [["Gemessen", fmtNum(r.obs) + " °C"]];
         if (r.prec !== null) pastRows.push(["Niederschlag", fmtNum(r.prec) + " mm"]);
         if (g) {
-          pastRows.push(["Best Guess", fmtNum(g.model) + " °C"]);
+          pastRows.push(["Beste Schätzung", fmtNum(g.model) + " °C"]);
           pastRows.push(["Abweichung", fmtSigned(g.errM) + " °C"]);
           pastRows.push(["Reine Klimatologie",
                          fmtNum(r.clim) + " °C · " + fmtSigned(g.errC) + " °C", "mute"]);
         }
         cell.dataset.tip = tipHTML(dayHead, "gemessen", pastRows, g ? {
           bar: { value: g.errM, max: 6, unit: "°C" },
-          note: "Best Guess gerechnet am Stichtag " + RETRO_LEAD + " Tage davor. Der Balken "
+          note: "Gerechnet am Stichtag " + RETRO_LEAD + " Tage davor. Der Balken "
               + "in der Zelle zeigt dieselbe Abweichung: nach rechts zu warm, nach links "
               + "zu kalt gerechnet.",
         } : { note: "Für diesen Tag reicht die Messreihe nicht weit genug zurück, "
-                  + "um den Best Guess nachzurechnen." });
+                  + "um die beste Schätzung nachzurechnen." });
         cell.innerHTML =
           '<span class="dnum">' + d.date.getDate() + "</span>"
           + '<span class="temp">' + Math.round(r.obs) + "°</span>"
@@ -2084,14 +2084,14 @@ function renderCalendar(days, months) {
           note: "Echte Wettervorhersage — Tag " + (d.lead + 1) + " von 16.",
         });
       } else {
-        const rows = [["Erwarteter Höchstwert", temp]];
+        const rows = [["Geschätzter Höchstwert", temp]];
         if (d.adj) {
           rows.push(["davon Klimawert", fmtNum(d.climTmax) + " °C", "mute"]);
           rows.push(["davon aktuelle Tendenz", fmtSigned(d.adj.dT) + " °C"]);
         }
         rows.push(["Nasse Jahre", Math.round(prob * 100) + " %"]);
         rows.push(["Datenbasis", fmtInt(d.clim ? d.clim.n : 0) + " Messtage", "mute"]);
-        cell.dataset.tip = tipHTML(head, "Erwartungswert", rows, {
+        cell.dataset.tip = tipHTML(head, "beste Schätzung", rows, {
           note: "Keine Vorhersage. Der Klimawert dieses Kalendertags, verschoben um die "
               + "aktuellen Tendenzen — in " + d.lead + " Tagen wiegt die Persistenz "
               + Math.round(d.adj ? d.adj.wPers * 100 : 0) + " %.",
@@ -2377,7 +2377,7 @@ function renderValidation(v, anchor) {
         + " trifft " + lf + "–" + lt + " an diesem Ort im Mittel um "
         + fmtNum(bestSkill * 100, 0) + " % genauer als die reine Klimatologie. "
         + "Das ist ein reales, aber kleines Signal — es rechtfertigt eine Verschiebung "
-        + "des Erwartungswerts, keine Tagesgenauigkeit.</p>";
+        + "des Klimawerts, keine Tagesgenauigkeit.</p>";
   } else if (bestSkill > 0.02) {
     txt = "<p><b>Grenzwertig.</b> Der beste Baustein (" + PRED_LABEL[v.best].toLowerCase()
         + ") liegt nur " + fmtNum(bestSkill * 100, 0) + " % vor der Klimatologie. "
@@ -2386,8 +2386,8 @@ function renderValidation(v, anchor) {
   } else {
     txt = "<p><b>Kein nachweisbarer Vorteil.</b> Für " + lf + "–" + lt
         + " an diesem Ort schlägt keiner der Bausteine die reine Klimatologie.</p>"
-        + "<p>Das ist kein Fehler der Seite, sondern das Ergebnis. Der Best Guess "
-        + "verschiebt den Erwartungswert hier also auf dünner Grundlage — wie dünn, "
+        + "<p>Das ist kein Fehler der Seite, sondern das Ergebnis. Die beste Schätzung "
+        + "verschiebt den Klimawert hier also auf dünner Grundlage — wie dünn, "
         + "steht in der Tabelle darüber, statt hinter einer schönen Zahl zu verschwinden.</p>";
   }
   txt += "<p>Die Dämpfung der Persistenz wird nicht geraten: Sie ergibt sich für jeden "
@@ -2416,7 +2416,7 @@ function errorLane(title, note, days, pick, scale, klass, kind, lead) {
     const tip = tipHTML(
       tipDate(r.date), kind,
       [["Gemessen", fmtNum(r.obs) + " °C"],
-       [kind === "Klimatologie" ? "Klimawert" : "Best Guess",
+       [kind === "Klimatologie" ? "Klimawert" : "Beste Schätzung",
         fmtNum(r.obs + e) + " °C"],
        ["Abweichung", fmtSigned(e) + " °C"]],
       { bar: { value: e, max: scale, unit: "°C" },
@@ -2463,14 +2463,14 @@ function renderRetro(retro) {
   const scale = Math.max(4, Math.ceil(mx));
 
   $("retroStrip").innerHTML =
-    errorLane("Best Guess · " + h.lead + " Tage Vorlauf",
+    errorLane("Beste Schätzung · " + h.lead + " Tage Vorlauf",
               "Ø " + fmtNum(h.maeM) + " °C",
-              shown, (r) => r.byLead.get(h.lead).errM, scale, "", "Best Guess", h.lead)
+              shown, (r) => r.byLead.get(h.lead).errM, scale, "", "Beste Schätzung", h.lead)
     + errorLane("Reine Klimatologie · derselbe Zeitraum",
                 "Ø " + fmtNum(h.maeC) + " °C",
                 shown, (r) => r.byLead.get(h.lead).errC, scale, "clim", "Klimatologie", h.lead);
 
-  let rows = "<tr><th>Vorlauf</th><th>Best Guess</th><th>Klimatologie</th>"
+  let rows = "<tr><th>Vorlauf</th><th>Beste Schätzung</th><th>Klimatologie</th>"
            + "<th>Skill</th><th>Näher dran</th><th>Regen</th></tr>";
   for (const s of retro.stats) {
     rows += "<tr" + (s.lead === h.lead ? ' class="accent"' : "") + ">"
@@ -2487,20 +2487,20 @@ function renderRetro(retro) {
   const best = retro.stats.reduce((a, b) => (a.skill >= b.skill ? a : b));
   let txt;
   if (h.skill > 0.05) {
-    txt = "<p><b>Der Best Guess lag im Prüfzeitraum vorn.</b> Bei " + h.lead
-        + " Tagen Vorlauf verfehlte er die gemessene Tageshöchsttemperatur im Mittel um "
+    txt = "<p><b>Die beste Schätzung lag im Prüfzeitraum vorn.</b> Bei " + h.lead
+        + " Tagen Vorlauf verfehlte sie die gemessene Tageshöchsttemperatur im Mittel um "
         + fmtNum(h.maeM) + " °C, die reine Klimatologie um " + fmtNum(h.maeC) + " °C — "
         + fmtNum(h.skill * 100, 0) + " % weniger Fehler, und an " + Math.round(h.better * 100)
-        + " % der Tage war er näher dran.</p>";
+        + " % der Tage war sie näher dran.</p>";
   } else if (h.skill > -0.02) {
-    txt = "<p><b>Gleichstand.</b> Bei " + h.lead + " Tagen Vorlauf liegt der Best Guess mit "
+    txt = "<p><b>Gleichstand.</b> Bei " + h.lead + " Tagen Vorlauf liegt die beste Schätzung mit "
         + fmtNum(h.maeM) + " °C praktisch auf der Klimatologie (" + fmtNum(h.maeC)
-        + " K). Die Verschiebung hat hier weder geholfen noch geschadet.</p>";
+        + " °C). Die Verschiebung hat hier weder geholfen noch geschadet.</p>";
   } else {
     txt = "<p><b>Schlechter als nichts tun.</b> Bei " + h.lead
-        + " Tagen Vorlauf lag der Best Guess mit " + fmtNum(h.maeM)
+        + " Tagen Vorlauf lag die beste Schätzung mit " + fmtNum(h.maeM)
         + " °C daneben, die reine Klimatologie mit nur " + fmtNum(h.maeC)
-        + " K. Die Konditionierung auf die aktuellen Tendenzen hat den Erwartungswert "
+        + " °C. Die Konditionierung auf die aktuellen Tendenzen hat den Klimawert "
         + "in diesem Zeitraum in die falsche Richtung geschoben.</p>";
   }
   txt += "<p>Über alle geprüften Vorlaufzeiten schneidet <b>" + best.lead
@@ -2592,11 +2592,11 @@ async function run(place) {
       fetchHistory(place.lat, place.lon),
       fetchForecast(place.lat, place.lon).catch((e) => {
         showError("16-Tage-Vorhersage nicht verfügbar — der Kalender zeigt "
-                + "durchgehend Erwartungswerte.", e.message);
+                + "durchgehend geschätzte Werte.", e.message);
         return null;
       }),
       fetchSeasonal(place.lat, place.lon).catch((e) => {
-        showError("Saisonprognose nicht verfügbar — der Best Guess stützt sich dann nur "
+        showError("Saisonprognose nicht verfügbar — die beste Schätzung stützt sich dann nur "
                 + "auf Persistenz und ähnliche Jahre.", e.message);
         return null;
       }),
@@ -2627,7 +2627,7 @@ async function run(place) {
 
     STATE.days = buildDaySeries(doyData, fc, 13, guess);
 
-    setLoading("Rechnet den Best Guess für die letzten " + RETRO_DAYS + " Tage nach …");
+    setLoading("Rechnet die beste Schätzung für die letzten " + RETRO_DAYS + " Tage nach …");
     // Eigene Klimatologie ohne den Prüfzeitraum — sonst prüft sie sich selbst.
     const cutoff = hist.daily.time[Math.max(0, hist.daily.time.length - RETRO_DAYS)];
     const doyRetro = buildDoyClimatology(hist.daily, year, cutoff);
