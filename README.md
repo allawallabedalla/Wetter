@@ -17,10 +17,13 @@ den Open-Meteo-APIs geladen und im Browser ausgewertet.
 
 ## Aufbau der Seite
 
-Ganz oben stehen vor allen Abschnitten zwei ungezählte Blöcke: eine
-**Kurzantwort** (Temperaturtendenz der nächsten 30 Tage, nächster Regentag,
-mittlerer Fehler des Modells im Rückblick — je mit Sprungmarke) und die
-**Einordnung**, wogegen sich die Seite messen lässt.
+Über den Abschnitten liegt eine klebende **Sprungleiste**, darunter die
+**Kurzantwort**: Temperaturtendenz der nächsten 30 Tage, nächster Regentag,
+mittlerer Fehler des Modells im Rückblick — je mit Sprungmarke in den
+zugehörigen Abschnitt, dazu eine Zeile zur Herkunft der Daten.
+
+Die **Einordnung**, wogegen sich die Seite messen lässt, steht am Ende vor der
+Methodik. Oben stand sie mit 450 Wörtern zwischen Suchfeld und Kalender.
 
 Die Einordnung ist in Alltagssprache geschrieben und kommt ohne Fachbegriffe
 aus — keine Reanalyse, kein Skill, kein Ensemble. Die Positionierung ist bewusst
@@ -88,6 +91,8 @@ Flächenkontrast, Typo-Gewicht und Weißraum.
   Abschnitte ordnen sich darunter ein
 - Temperaturabweichungen stehen in **Grad Celsius**, nicht in Kelvin; bei
   Differenzen ist beides dasselbe, nur versteht das eine jeder
+- Fachbegriffe bleiben stehen — die Seite ist analytisch. Beim ersten Auftreten
+  sind sie gepunktet unterstrichen und erklären sich im Tooltip
 - Icons ausschließlich als Inline-SVG, Strichstärke 1,5 px, keine Füllung
 - Tooltips sind eigene Elemente statt `title` — Kopfzeile, Wertzeilen und
   optional ein Abweichungsbalken, im selben Schwarzweiß wie der Rest

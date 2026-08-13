@@ -136,11 +136,36 @@
   .errbox b { display: block; margin-bottom: 5px; }
   .errbox code { font-size: .85em; color: var(--mute); word-break: break-word; }
 
+  /* ── Sprungleiste ────────────────────────────────────────── */
+
+  .nav {
+    position: sticky; top: 0; z-index: 40;
+    display: flex; align-items: center; gap: 2px;
+    background: var(--paper); border-bottom: 2px solid var(--line);
+    margin: 0 -24px; padding: 0 24px;
+    overflow-x: auto; scrollbar-width: none;
+    font-size: .65rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+  }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav a {
+    color: var(--mute); text-decoration: none; white-space: nowrap;
+    padding: 12px 9px; border-bottom: 2px solid transparent; margin-bottom: -2px;
+  }
+  .nav a b { color: var(--ink); font-weight: 700; margin-right: 4px; }
+  .nav a:hover { color: var(--ink); }
+  .nav a[aria-current="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+  /* Trennt Nutzung von Nachrechnen — die Beschriftung dazu steht als
+     Zwischenüberschrift im Fließtext, nicht hier oben. */
+  .nav .sep {
+    flex: 0 0 auto; width: 1px; align-self: stretch;
+    background: var(--rule); margin: 0 7px;
+  }
+
   /* ── Kurzantwort ─────────────────────────────────────────── */
 
   /* Der einzige Block der Seite mit großer Type. Alles andere ordnet sich
      darunter ein — sonst konkurrieren drei Kästen um dieselbe Rolle. */
-  .answer { border: 2px solid var(--line); margin: 34px 0 0; }
+  .answer { border: 2px solid var(--line); margin: 30px 0 0; }
   .answer .ah {
     background: var(--ink); color: var(--paper); padding: 9px 16px;
     display: flex; justify-content: space-between; align-items: baseline; gap: 14px;
@@ -176,6 +201,19 @@
     border-bottom: 1.5px solid var(--ink); padding-bottom: 2px;
   }
   .answer .acol:hover .go { background: var(--ink); color: var(--paper); }
+  .answer .asrc {
+    border-top: 1.5px solid var(--line); background: var(--fill-soft);
+    padding: 11px 18px; font-size: .74rem; color: var(--mute);
+    display: flex; flex-wrap: wrap; gap: 6px 20px;
+    align-items: baseline; justify-content: space-between;
+  }
+  .answer .asrc b { color: var(--ink); font-weight: 700; }
+  .answer .asrc a {
+    color: var(--ink); text-decoration: none; white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 6px;
+    font-weight: 700; border-bottom: 1.5px solid var(--ink);
+  }
+  .answer .asrc a:hover { background: var(--ink); color: var(--paper); }
 
   /* ── Einordnung ──────────────────────────────────────────── */
 
@@ -206,12 +244,31 @@
     letter-spacing: .13em; text-transform: uppercase; margin-right: 7px;
   }
 
+  /* ── Trennlinie und Begriffe ─────────────────────────────── */
+
+  .partline { padding: 46px 0 6px; }
+  .partline .t {
+    display: inline-block; background: var(--ink); color: var(--paper);
+    padding: 7px 13px; font-size: .63rem; font-weight: 700;
+    letter-spacing: .18em; text-transform: uppercase;
+  }
+  .partline p {
+    margin: 16px 0 0; max-width: 68ch; font-size: .94rem; color: var(--mute);
+  }
+  .partline p b { color: var(--ink); font-weight: 600; }
+
+  .term {
+    border-bottom: 1px dotted var(--mute); cursor: help;
+    text-underline-offset: 3px;
+  }
+
   /* ── Abschnitte ──────────────────────────────────────────── */
 
   html { scroll-behavior: smooth; }
   @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
-  section { padding: 54px 0; border-bottom: 1px solid var(--rule); scroll-margin-top: 16px; }
+  section { padding: 54px 0; border-bottom: 1px solid var(--rule); scroll-margin-top: 62px; }
+  #answer, #stance { scroll-margin-top: 62px; }
   .sec-head { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 8px; }
   .sec-head .num {
     font-size: .7rem; font-weight: 700; letter-spacing: .1em;
@@ -639,68 +696,22 @@
 
   <main id="out" hidden>
 
+    <!-- ═══ Sprungleiste — 21 Bildschirme ohne Navigation waren eine Zumutung ═══ -->
+    <nav class="nav" id="nav" aria-label="Abschnitte">
+      <a href="#answer">Antwort</a>
+      <a href="#secCal"><b>01</b> Kalender</a>
+      <a href="#secRetro"><b>02</b> Rückblick</a>
+      <a href="#secRain"><b>03</b> Regen</a>
+      <span class="sep" aria-hidden="true"></span>
+      <a href="#secNow"><b>04</b> Lage</a>
+      <a href="#secFc"><b>05</b> Saison</a>
+      <a href="#secAna"><b>06</b> Jahre</a>
+      <a href="#secVal"><b>07</b> Prüfung</a>
+      <a href="#secMeth"><b>08</b> Methodik</a>
+    </nav>
+
     <!-- ═══ Kurzantwort — die drei Fakten, bevor die Rechnung anfängt ═══ -->
     <div class="answer" id="answer" hidden></div>
-
-    <!-- ═══ Einordnung — in Alltagssprache, mit nachgerechnetem Beleg ═══ -->
-    <div class="stance">
-      <p class="claim">
-        Für die nächsten zwei Wochen ist jede Wetter-App ungefähr so gut wie diese
-        Seite — alle rechnen mit denselben Daten. <b>Der Unterschied fängt danach an.</b>
-        Wo andere Seiten Temperaturen für einzelne Tage in sechs Wochen anzeigen, steht
-        hier, wie warm es an diesem Kalendertag üblicherweise ist — und wie gut das
-        zuletzt gepasst hat.
-      </p>
-
-      <div class="cols">
-
-        <div class="c">
-          <h3>
-            <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
-            </svg>
-            Die nächsten 16 Tage
-          </h3>
-          <p>Die Vorhersage kommt vom <b>Deutschen Wetterdienst</b> und vom
-          europäischen Wetterzentrum — dieselben Daten, aus denen auch die Wetter-App
-          auf dem Handy ihre Werte zieht. Öffentlich zugänglich und kostenlos.</p>
-        </div>
-
-        <div class="c">
-          <h3>
-            <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M3 20h18M6 20v-7M11 20V8M16 20v-4M21 20v-9"/>
-            </svg>
-            Alles danach
-          </h3>
-          <p>Für einen einzelnen Tag in sechs Wochen kann niemand eine Temperatur
-          nennen — das ist eine <b>Grenze der Physik</b>, keine Frage besserer
-          Technik. Statt eine Zahl zu erfinden, steht hier, wie warm es an genau
-          diesem Kalendertag in 75 Jahren war und wohin die aktuelle Wetterlage das
-          verschiebt.</p>
-        </div>
-
-        <div class="c">
-          <h3>
-            <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>
-            </svg>
-            Nachgerechnet
-          </h3>
-          <p id="stanceProof">Diese Seite rechnet ihre eigene Vorhersage für die
-          vergangenen Monate noch einmal — und vergleicht sie mit dem, was wirklich
-          gemessen wurde. Das Ergebnis steht weiter unten, <b>auch wenn es schlecht
-          ausfällt</b>.</p>
-        </div>
-
-      </div>
-
-      <div class="src">
-        <span><b>Vorhersage</b>Deutscher Wetterdienst und europäisches Wetterzentrum (ECMWF), über den freien Dienst Open-Meteo</span>
-        <span><b>Messwerte</b>75 Jahre Tageswerte für diesen Ort, aus dem Archiv des europäischen Wetterzentrums</span>
-        <span><b>Nutzung</b>kostenlos, ohne Konto, ohne Werbung — nichts wird gespeichert</span>
-      </div>
-    </div>
 
     <!-- ═══ 01 · Tageskalender ═══ -->
     <section id="secCal">
@@ -815,6 +826,15 @@
       <div class="note" id="rainStats"></div>
     </section>
 
+    <!-- ═══ Ab hier: die Bausteine und ihre Prüfung ═══ -->
+    <div class="partline">
+      <span class="t">Zum Nachrechnen</span>
+      <p>Ab hier wird es technisch: die einzelnen Bausteine, aus denen die Schätzung
+      entsteht, und die Prüfung, ob sie etwas taugen. Für den Wetterblick oben braucht
+      man das nicht — für die Frage, ob man ihm glauben soll, schon.
+      <b>Unterstrichene Begriffe erklären sich, wenn man auf sie zeigt.</b></p>
+    </div>
+
     <!-- ═══ 04 · Aktuelle Lage ═══ -->
     <section id="secNow">
       <div class="sec-head">
@@ -905,8 +925,68 @@
       <div class="verdict" id="valVerdict"></div>
     </section>
 
+    <!-- ═══ Einordnung — in Alltagssprache, mit nachgerechnetem Beleg ═══ -->
+    <div class="stance" id="stance">
+      <p class="claim">
+        Für die nächsten zwei Wochen ist jede Wetter-App ungefähr so gut wie diese
+        Seite — alle rechnen mit denselben Daten. <b>Der Unterschied fängt danach an.</b>
+        Wo andere Seiten Temperaturen für einzelne Tage in sechs Wochen anzeigen, steht
+        hier, wie warm es an diesem Kalendertag üblicherweise ist — und wie gut das
+        zuletzt gepasst hat.
+      </p>
+
+      <div class="cols">
+
+        <div class="c">
+          <h3>
+            <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+            </svg>
+            Die nächsten 16 Tage
+          </h3>
+          <p>Die Vorhersage kommt vom <b>Deutschen Wetterdienst</b> und vom
+          europäischen Wetterzentrum — dieselben Daten, aus denen auch die Wetter-App
+          auf dem Handy ihre Werte zieht. Öffentlich zugänglich und kostenlos.</p>
+        </div>
+
+        <div class="c">
+          <h3>
+            <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 20h18M6 20v-7M11 20V8M16 20v-4M21 20v-9"/>
+            </svg>
+            Alles danach
+          </h3>
+          <p>Für einen einzelnen Tag in sechs Wochen kann niemand eine Temperatur
+          nennen — das ist eine <b>Grenze der Physik</b>, keine Frage besserer
+          Technik. Statt eine Zahl zu erfinden, steht hier, wie warm es an genau
+          diesem Kalendertag in 75 Jahren war und wohin die aktuelle Wetterlage das
+          verschiebt.</p>
+        </div>
+
+        <div class="c">
+          <h3>
+            <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>
+            </svg>
+            Nachgerechnet
+          </h3>
+          <p id="stanceProof">Diese Seite rechnet ihre eigene Vorhersage für die
+          vergangenen Monate noch einmal — und vergleicht sie mit dem, was wirklich
+          gemessen wurde. Das Ergebnis steht weiter unten, <b>auch wenn es schlecht
+          ausfällt</b>.</p>
+        </div>
+
+      </div>
+
+      <div class="src">
+        <span><b>Vorhersage</b>Deutscher Wetterdienst und europäisches Wetterzentrum (ECMWF), über den freien Dienst Open-Meteo</span>
+        <span><b>Messwerte</b>75 Jahre Tageswerte für diesen Ort, aus dem Archiv des europäischen Wetterzentrums</span>
+        <span><b>Nutzung</b>kostenlos, ohne Konto, ohne Werbung — nichts wird gespeichert</span>
+      </div>
+    </div>
+
     <!-- ═══ 08 · Methodik ═══ -->
-    <section style="border-bottom:none">
+    <section id="secMeth" style="border-bottom:none">
       <div class="sec-head">
         <span class="num">08</span>
         <div><h2>Methodik &amp; Grenzen</h2></div>
@@ -1955,6 +2035,106 @@ window.addEventListener("scroll", hideTip, true);
 window.addEventListener("resize", hideTip);
 
 /* ═══════════════════════════════════════════════════════════════
+   Sprungleiste und Begriffe
+   ═══════════════════════════════════════════════════════════════ */
+
+/** Markiert in der Sprungleiste, wo man gerade ist. */
+let sectionsTracked = false;
+
+function trackSections() {
+  if (sectionsTracked) return;
+  sectionsTracked = true;
+  const links = [...document.querySelectorAll("#nav a[href^='#']")];
+  const targets = links
+    .map((a) => ({ a, el: document.querySelector(a.getAttribute("href")) }))
+    .filter((t) => t.el);
+  if (!targets.length || !("IntersectionObserver" in window)) return;
+
+  const visible = new Set();
+  const mark = () => {
+    let best = null;
+    for (const t of targets) {
+      if (!visible.has(t.el)) continue;
+      const top = t.el.getBoundingClientRect().top;
+      if (best === null || top < best.top) best = { top, t };
+    }
+    for (const t of targets) t.a.removeAttribute("aria-current");
+    if (!best) return;
+    best.t.a.setAttribute("aria-current", "true");
+
+    // Nur die Leiste waagerecht nachführen — scrollIntoView würde die Seite bewegen
+    const nav = $("nav");
+    const a = best.t.a;
+    const links = nav.getBoundingClientRect(), me = a.getBoundingClientRect();
+    if (me.left < links.left + 12) nav.scrollLeft += me.left - links.left - 12;
+    else if (me.right > links.right - 12) nav.scrollLeft += me.right - links.right + 12;
+  };
+
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (e.isIntersecting) visible.add(e.target); else visible.delete(e.target);
+    }
+    mark();
+  }, { rootMargin: "-64px 0px -55% 0px" });
+  targets.forEach((t) => io.observe(t.el));
+}
+
+/**
+ * Fachbegriffe bleiben stehen — die Seite ist analytisch und soll es bleiben.
+ * Aber beim ersten Auftreten in einem Abschnitt hängt eine Erklärung dran,
+ * abrufbar über denselben Tooltip wie überall sonst.
+ */
+const GLOSSAR = {
+  "Klimatologie": "Der reine Durchschnitt aus der Messreihe, ohne jede Anpassung an die aktuelle Lage — die Vergleichslatte für alles Weitere.",
+  "Normalwert": "Das Mittel der Jahre 1991 bis 2020. So definiert es die Weltorganisation für Meteorologie; „normal“ heißt also: verglichen mit diesen 30 Jahren.",
+  "Persistenz": "Die Beobachtung, dass eine Wetterlage eine Weile anhält. War es zuletzt zu warm, ist es das kurzfristig eher weiter — mit abnehmender Wirkung.",
+  "Analogjahre": "Frühere Jahre, deren Temperaturverlauf dem jetzigen am ähnlichsten war. Was danach in ihnen passierte, ist ein Hinweis — mehr nicht.",
+  "Ensemble": "Ein Vorhersagemodell wird nicht einmal gerechnet, sondern viele Male mit leicht verschiedenen Startwerten. Wie weit die Ergebnisse auseinanderlaufen, zeigt die Unsicherheit.",
+  "Median": "Der mittlere Wert einer sortierten Reihe: die Hälfte liegt darüber, die Hälfte darunter. Robuster gegen Ausreißer als der Durchschnitt.",
+  "Perzentil": "Das 10. Perzentil ist der Wert, den nur 10 % der Fälle unterschreiten. Zwischen dem 10. und 90. liegen also vier von fünf Fällen.",
+  "Reanalyse": "Alte Messungen aus Stationen, Ballons und Satelliten, mit einem heutigen Wettermodell noch einmal zu einem lückenlosen Bild verrechnet.",
+  "Skill": "Der Vorsprung gegenüber der simpelsten Vorhersage. 0 % heißt: genauso gut wie „es wird normal“. Negativ heißt: schlechter als nichts tun.",
+  "Anomalie": "Die Abweichung vom Üblichen, nicht der Messwert selbst. „+2 Grad“ heißt: zwei Grad über dem, was für diesen Zeitraum normal wäre.",
+  "Stichtag": "Der Tag, an dem eine Vorhersage gerechnet wird. Für einen ehrlichen Rückblick darf nur zählen, was an diesem Tag schon bekannt war.",
+  "Vorlauf": "Der Abstand zwischen Stichtag und vorhergesagtem Tag. 30 Tage Vorlauf heißt: einen Monat vorher gerechnet.",
+};
+
+function annotateTerms(root) {
+  const keys = Object.keys(GLOSSAR).sort((a, b) => b.length - a.length);
+  // Schon markierte Begriffe überspringen — sonst sammeln sich bei jedem
+  // Ortswechsel weitere Markierungen desselben Worts an.
+  const done = new Set([...root.querySelectorAll(".term")].map((e) => e.dataset.term));
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode: (n) => (n.parentElement.closest(".term, #nav, .key, code, h2, .num"))
+      ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT,
+  });
+  const nodes = [];
+  let n;
+  while ((n = walker.nextNode())) nodes.push(n);
+
+  for (const node of nodes) {
+    for (const key of keys) {
+      if (done.has(key)) continue;
+      const i = node.textContent.indexOf(key);
+      if (i < 0) continue;
+      // Deutsche Beugung mit unterstreichen, damit die Linie nicht mitten
+      // in „Analogjahren" endet
+      const beugung = /^(en|em|er|es|n|s)\b/.exec(node.textContent.slice(i + key.length));
+      const after = node.splitText(i);
+      after.splitText(key.length + (beugung ? beugung[0].length : 0));
+      const span = document.createElement("span");
+      span.className = "term";
+      span.dataset.term = key;
+      span.textContent = after.textContent;
+      span.dataset.tip = tipHTML(key, "Begriff", null, { note: GLOSSAR[key] });
+      after.parentNode.replaceChild(span, after);
+      done.add(key);
+      break;                       // pro Textknoten höchstens eine Markierung
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
    Darstellung
    ═══════════════════════════════════════════════════════════════ */
 
@@ -2024,7 +2204,12 @@ function renderAnswer(days, retro, hasForecast, place) {
   box.innerHTML =
     '<div class="ah"><span>Kurz gesagt</span><span class="where">'
     + escAttr(place.name) + "</span></div>"
-    + '<div class="acols">' + cols.join("") + "</div>";
+    + '<div class="acols">' + cols.join("") + "</div>"
+    // Die Einordnung steht weiter unten; hier reicht die kurze Herkunft
+    // plus ein Weg dorthin — sonst stünden 450 Wörter vor dem Kalender.
+    + '<div class="asrc"><span>Vorhersage vom <b>Deutschen Wetterdienst</b> · '
+      + "<b>75 Jahre</b> Messreihe für diesen Ort · kostenlos, ohne Konto</span>"
+      + '<a href="#stance">Warum man dem trauen kann' + arrow + "</a></div>";
 }
 
 /**
@@ -2829,6 +3014,9 @@ async function run(place) {
 
     clearLoading();
     $("srcBadgeText").textContent = "Live-Daten · " + place.name;
+    annotateTerms($("out"));
+    trackSections();
+
     try {
       const u = new URL(location.href);
       u.searchParams.set("ort", place.name);
