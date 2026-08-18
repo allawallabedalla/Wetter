@@ -353,7 +353,7 @@
     gap: 1px; background: var(--rule); min-width: 480px;
   }
   .week7 .wd {
-    position: relative; background: var(--paper);
+    position: relative; background: var(--paper); min-width: 0;
     display: flex; flex-direction: column; align-items: center;
     padding: 12px 6px 16px; text-align: center;
   }
@@ -368,7 +368,15 @@
     font-size: 1.55rem; font-weight: 800; letter-spacing: -.04em;
     line-height: 1.1; margin-top: 8px; font-variant-numeric: tabular-nums;
   }
-  .week7 .tn { font-size: .76rem; color: var(--mute); margin-top: 1px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  /* Unsicherheitsband unter dem Punktwert: 10.–90. Perzentil des Ensembles.
+     Bewusst klein und mager gegen die fette Punktschätzung gesetzt — die
+     Spanne ergänzt den Wert, sie soll ihn nicht überstrahlen. */
+  .week7 .band {
+    font-size: .62rem; color: var(--mute); margin-top: 2px;
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .week7 .tn { font-size: .76rem; color: var(--mute); margin-top: 5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .week7 .tnband { font-size: .62rem; color: var(--mute); margin-top: 1px; font-variant-numeric: tabular-nums; white-space: nowrap; }
   /* Regen als eigener Messbalken in der Karte: die Umrandung zeigt die volle
      Skala, die Füllung die Wahrscheinlichkeit — ein randloser 6-px-Streifen
      am Kartenboden war schlicht zu leicht zu übersehen. */
@@ -1325,6 +1333,104 @@ function fetchForecast(lat, lon) {
     + "&forecast_days=16&timezone=Europe%2FBerlin");
 }
 
+/**
+ * Unsicherheitsband für die 16-Tage-Vorhersage: dasselbe Wettermodell wird
+ * viele Male mit leicht verschiedenen Startwerten gerechnet (Ensemble). Wie
+ * weit die Läufe auseinanderliegen, ist die ehrlichste verfügbare Angabe
+ * darüber, wie sicher die Vorhersage ist. Liefert pro Tag das 10.–90.
+ * Perzentil für Höchst-/Tiefsttemperatur und Niederschlagssumme.
+ *
+ * Die API liefert je nach Ausbau Tages- oder nur Stundenwerte pro Mitglied —
+ * beide Formen werden unterstützt. Ohne Ensemble gibt es schlicht kein Band.
+ */
+async function fetchEnsemble(lat, lon) {
+  const base = "https://ensemble-api.open-meteo.com/v1/ensemble?latitude=" + lat
+             + "&longitude=" + lon + "&forecast_days=16&timezone=Europe%2FBerlin";
+  const variants = [
+    base + "&models=gfs_seamless&daily=temperature_2m_max,temperature_2m_min,precipitation_sum",
+    base + "&models=gfs_seamless&hourly=temperature_2m,precipitation",
+    base + "&models=ecmwf_ifs025&hourly=temperature_2m,precipitation",
+  ];
+  for (const url of variants) {
+    try {
+      const m = aggregateEnsemble(await getJSON(url));
+      if (m) return m;
+    } catch (_) { /* nächste Variante */ }
+  }
+  return null;
+}
+
+/** ISO-Datum → { txLo, txHi, tnLo, tnHi, pLo, pHi, n } — oder null. */
+function aggregateEnsemble(ens) {
+  if (!ens) return null;
+  const out = new Map();
+  const band = (arr) => {
+    const s = [...arr].sort((a, b) => a - b);
+    return [quantile(s, 0.1), quantile(s, 0.9)];
+  };
+  const vals = (d, keys, i) =>
+    keys.map((k) => d[k][i]).filter((v) => v !== null && v !== undefined && !Number.isNaN(v));
+
+  if (ens.daily && ens.daily.time) {
+    const d = ens.daily;
+    const txK = memberKeys(d, "temperature_2m_max");
+    const tnK = memberKeys(d, "temperature_2m_min");
+    const prK = memberKeys(d, "precipitation_sum");
+    if (txK.length < 5) return null;      // ohne echtes Ensemble keine Spanne
+    for (let i = 0; i < d.time.length; i++) {
+      const txs = vals(d, txK, i), tns = vals(d, tnK, i), prs = vals(d, prK, i);
+      if (txs.length < 5) continue;
+      const [txLo, txHi] = band(txs);
+      const [tnLo, tnHi] = tns.length >= 5 ? band(tns) : [NaN, NaN];
+      const [pLo, pHi]   = prs.length >= 5 ? band(prs) : [NaN, NaN];
+      out.set(d.time[i], { txLo, txHi, tnLo, tnHi, pLo, pHi, n: txs.length });
+    }
+    return out.size ? out : null;
+  }
+
+  if (ens.hourly && ens.hourly.time) {
+    const h = ens.hourly;
+    const tK = memberKeys(h, "temperature_2m");
+    const pK = memberKeys(h, "precipitation");
+    if (tK.length < 5) return null;
+    // erst pro Tag und Mitglied aggregieren, dann übers Ensemble
+    const days = new Map();
+    for (let i = 0; i < h.time.length; i++) {
+      const day = h.time[i].slice(0, 10);
+      let r = days.get(day);
+      if (!r) {
+        r = { tx: new Array(tK.length).fill(-Infinity),
+              tn: new Array(tK.length).fill(Infinity),
+              p:  new Array(pK.length).fill(0), n: 0 };
+        days.set(day, r);
+      }
+      r.n++;
+      tK.forEach((k, m) => {
+        const v = h[k][i];
+        if (v === null || v === undefined || Number.isNaN(v)) return;
+        if (v > r.tx[m]) r.tx[m] = v;
+        if (v < r.tn[m]) r.tn[m] = v;
+      });
+      pK.forEach((k, m) => {
+        const v = h[k][i];
+        if (v !== null && v !== undefined && !Number.isNaN(v)) r.p[m] += v;
+      });
+    }
+    for (const [day, r] of days) {
+      if (r.n < 20) continue;             // angebrochene Tage am Reihenende
+      const txs = r.tx.filter((v) => v !== -Infinity);
+      const tns = r.tn.filter((v) => v !== Infinity);
+      if (txs.length < 5) continue;
+      const [txLo, txHi] = band(txs);
+      const [tnLo, tnHi] = tns.length >= 5 ? band(tns) : [NaN, NaN];
+      const [pLo, pHi]   = pK.length >= 5 ? band(r.p) : [NaN, NaN];
+      out.set(day, { txLo, txHi, tnLo, tnHi, pLo, pHi, n: txs.length });
+    }
+    return out.size ? out : null;
+  }
+  return null;
+}
+
 /** Die Parameterunterstützung variiert — mehrere Varianten der Reihe nach probieren. */
 async function fetchSeasonal(lat, lon) {
   const base = "https://seasonal-api.open-meteo.com/v1/seasonal?latitude=" + lat
@@ -1898,7 +2004,7 @@ function aggregateSeasonal(seasonal) {
  * Tage innerhalb der Vorhersagereichweite bekommen echte Werte
  * (source: "fc"), alle übrigen den Erwartungswert (source: "clim").
  */
-function buildDaySeries(doyData, forecast, months, guess) {
+function buildDaySeries(doyData, forecast, months, guess, ensemble) {
   const fcMap = new Map();
   if (forecast && forecast.daily) {
     const f = forecast.daily;
@@ -1931,6 +2037,7 @@ function buildDaySeries(doyData, forecast, months, guess) {
       source: fc ? "fc" : "clim",
       tmax: null, tmin: null, rainProb: null, prec: null, wet: false,
       climTmax: clim ? clim.tmax : null, adj: null,
+      band: (fc && ensemble) ? (ensemble.get(key) || null) : null,
     };
 
     if (fc && fc.tmax !== null && fc.tmax !== undefined) {
@@ -2304,26 +2411,45 @@ function renderWeek7(days) {
                                   && d.tmax !== null).slice(0, 7);
   if (week.length < 5) { box.hidden = true; return; }
 
+  const hasBand = week.some((d) => d.band);
   let cells = "";
   for (const d of week) {
     const inDays = Math.round((d.date - today) / 86400000);
     const dw = inDays === 0 ? "Heute" : inDays === 1 ? "Morgen" : DOW[dowMon(d.date)];
     const prob = (d.rainProb === null || Number.isNaN(d.rainProb)) ? null : d.rainProb;
+    const b = d.band;
 
     const rows = [["Höchsttemperatur", fmtNum(d.tmax) + " °C"]];
+    if (b && !Number.isNaN(b.txLo)) rows.push(["davon 4 von 5 Läufen",
+      fmtNum(b.txLo) + " bis " + fmtNum(b.txHi) + " °C", "mute"]);
     if (d.tmin !== null) rows.push(["Tiefsttemperatur", fmtNum(d.tmin) + " °C"]);
+    if (b && !Number.isNaN(b.tnLo)) rows.push(["davon 4 von 5 Läufen",
+      fmtNum(b.tnLo) + " bis " + fmtNum(b.tnHi) + " °C", "mute"]);
     if (prob !== null) rows.push(["Regenwahrscheinlichkeit", Math.round(prob * 100) + " %"]);
-    if (d.prec !== null) rows.push(["Niederschlag", fmtNum(d.prec) + " mm"]);
-    const tip = tipHTML(tipDate(d.date), "Vorhersage", rows,
-      { note: "Echte Wettervorhersage — Tag " + (d.lead + 1) + " von 16." });
+    if (d.prec !== null) rows.push(["Niederschlag, wahrscheinlichster Wert", fmtNum(d.prec) + " mm"]);
+    if (b && !Number.isNaN(b.pLo)) rows.push(["davon 4 von 5 Läufen",
+      fmtNum(b.pLo) + " bis " + fmtNum(b.pHi) + " mm", "mute"]);
+    const tip = tipHTML(tipDate(d.date), "Vorhersage", rows, { note:
+      "Echte Wettervorhersage — Tag " + (d.lead + 1) + " von 16."
+      + (b ? " Die Spanne zeigt, wie weit " + b.n + " Modellläufe mit leicht "
+             + "verschiedenen Startwerten auseinanderliegen (10.–90. Perzentil)." : "") });
 
-    const mm = (d.prec !== null && d.prec >= 0.1) ? fmtNum(d.prec) + " mm" : null;
+    const txBand = (b && !Number.isNaN(b.txLo))
+      ? fmtNum(b.txLo, 0) + "–" + fmtNum(b.txHi, 0) + " °C" : null;
+    const tnBand = (b && !Number.isNaN(b.tnLo))
+      ? fmtNum(b.tnLo, 0) + "–" + fmtNum(b.tnHi, 0) + " °C" : null;
+    const mm = (b && !Number.isNaN(b.pLo) && b.pHi >= 0.1)
+      ? fmtNum(b.pLo, 0) + "–" + fmtNum(b.pHi, 0) + " mm"
+      : (d.prec !== null && d.prec >= 0.1) ? fmtNum(d.prec) + " mm" : null;
+
     cells +=
       '<div class="wd' + (d.isToday ? " today" : "") + '"' + tipAttr(tip) + ">"
       + '<span class="dw">' + dw + "</span>"
       + '<span class="dt">' + d.date.getDate() + ". " + MON[d.date.getMonth()] + "</span>"
       + '<span class="tx">' + Math.round(d.tmax) + "°</span>"
+      + (txBand ? '<span class="band">' + txBand + "</span>" : "")
       + '<span class="tn">' + (d.tmin === null ? "—" : "nachts " + Math.round(d.tmin) + "°") + "</span>"
+      + (tnBand ? '<span class="tnband">' + tnBand + "</span>" : "")
       + '<span class="meter" aria-hidden="true"><b style="width:'
         + ((prob || 0) * 100).toFixed(0) + '%"></b></span>'
       + '<span class="rp' + (prob !== null && prob < 0.15 && !mm ? " dry" : "") + '">'
@@ -2335,7 +2461,8 @@ function renderWeek7(days) {
 
   box.innerHTML =
     '<div class="cap"><span class="t">Die nächste Woche</span>'
-    + '<span class="s">echte Vorhersage · Balken: Regenwahrscheinlichkeit · mm: erwartete Menge</span></div>'
+    + '<span class="s">echte Vorhersage · Balken: Regenwahrscheinlichkeit · mm: erwartete Menge'
+      + (hasBand ? " · klein darunter: Spanne über 4 von 5 Modellläufen" : "") + "</span></div>"
     + '<div class="scroll"><div class="grid">' + cells + "</div></div>";
   box.hidden = false;
 }
@@ -3056,7 +3183,7 @@ async function run(place) {
 
   try {
     setLoading("Lade Messhistorie seit " + HIST_START + " — rund 28 000 Tageswerte …");
-    const [hist, fc, seasonal] = await Promise.all([
+    const [hist, fc, seasonal, ensemble] = await Promise.all([
       fetchHistory(place.lat, place.lon),
       fetchForecast(place.lat, place.lon).catch((e) => {
         showError("16-Tage-Vorhersage nicht verfügbar — der Kalender zeigt "
@@ -3068,6 +3195,9 @@ async function run(place) {
                 + "auf Persistenz und ähnliche Jahre.", e.message);
         return null;
       }),
+      // Kein showError bei Ausfall: das Unsicherheitsband ist eine Zugabe,
+      // kein Kernwert — der Wochenstreifen zeigt dann eben nur den Punktwert.
+      fetchEnsemble(place.lat, place.lon).catch(() => null),
     ]);
 
     setLoading("Berechne Tagesklimatologie aus 75 Jahren …");
@@ -3093,7 +3223,7 @@ async function run(place) {
     const seasonalMap = seasonalOffsets(fcMonths, clim);
     const guess = makeBestGuess(recent, analogOff, seasonalMap);
 
-    STATE.days = buildDaySeries(doyData, fc, 13, guess);
+    STATE.days = buildDaySeries(doyData, fc, 13, guess, ensemble);
 
     setLoading("Rechnet die beste Schätzung für die letzten " + RETRO_DAYS + " Tage nach …");
     // Eigene Klimatologie ohne den Prüfzeitraum — sonst prüft sie sich selbst.
