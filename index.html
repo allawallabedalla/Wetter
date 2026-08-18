@@ -369,16 +369,20 @@
     line-height: 1.1; margin-top: 8px; font-variant-numeric: tabular-nums;
   }
   .week7 .tn { font-size: .76rem; color: var(--mute); margin-top: 1px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  /* Regen als eigener Messbalken in der Karte: die Umrandung zeigt die volle
+     Skala, die Füllung die Wahrscheinlichkeit — ein randloser 6-px-Streifen
+     am Kartenboden war schlicht zu leicht zu übersehen. */
+  .week7 .meter {
+    width: 100%; max-width: 88px; height: 10px;
+    border: 1.5px solid var(--ink); margin-top: 10px;
+  }
+  .week7 .meter b { display: block; height: 100%; background: var(--ink); }
   .week7 .rp {
-    font-size: .68rem; font-weight: 700; margin-top: 8px;
+    font-size: .68rem; font-weight: 700; margin-top: 5px;
     font-variant-numeric: tabular-nums; white-space: nowrap;
   }
+  .week7 .rp .mm { display: block; margin-top: 1px; }
   .week7 .rp.dry { color: var(--mute); font-weight: 600; }
-  .week7 .wd .rain {
-    position: absolute; left: 0; right: 0; bottom: 0; height: 6px;
-    border-top: 1px solid var(--rule);
-  }
-  .week7 .wd .rain b { position: absolute; left: 0; bottom: 0; top: 0; display: block; background: var(--ink); }
   .week7 .wd .wet { position: absolute; top: 6px; right: 7px; width: 6px; height: 6px; background: var(--ink); }
   @media (max-width: 620px) {
     .week7 .tx { font-size: 1.25rem; }
@@ -2313,22 +2317,25 @@ function renderWeek7(days) {
     const tip = tipHTML(tipDate(d.date), "Vorhersage", rows,
       { note: "Echte Wettervorhersage — Tag " + (d.lead + 1) + " von 16." });
 
+    const mm = (d.prec !== null && d.prec >= 0.1) ? fmtNum(d.prec) + " mm" : null;
     cells +=
       '<div class="wd' + (d.isToday ? " today" : "") + '"' + tipAttr(tip) + ">"
       + '<span class="dw">' + dw + "</span>"
       + '<span class="dt">' + d.date.getDate() + ". " + MON[d.date.getMonth()] + "</span>"
       + '<span class="tx">' + Math.round(d.tmax) + "°</span>"
       + '<span class="tn">' + (d.tmin === null ? "—" : "nachts " + Math.round(d.tmin) + "°") + "</span>"
-      + '<span class="rp' + (prob !== null && prob < 0.15 ? " dry" : "") + '">'
-        + (prob === null ? "—" : Math.round(prob * 100) + " % Regen") + "</span>"
+      + '<span class="meter" aria-hidden="true"><b style="width:'
+        + ((prob || 0) * 100).toFixed(0) + '%"></b></span>'
+      + '<span class="rp' + (prob !== null && prob < 0.15 && !mm ? " dry" : "") + '">'
+        + (prob === null ? "—" : Math.round(prob * 100) + " % Regen")
+        + (mm ? '<span class="mm">' + mm + "</span>" : "") + "</span>"
       + (d.wet ? '<span class="wet"></span>' : "")
-      + '<span class="rain"><b style="width:' + ((prob || 0) * 100).toFixed(0) + '%"></b></span>'
       + "</div>";
   }
 
   box.innerHTML =
     '<div class="cap"><span class="t">Die nächste Woche</span>'
-    + '<span class="s">echte Vorhersage · Balken unten: Regenwahrscheinlichkeit</span></div>'
+    + '<span class="s">echte Vorhersage · Balken: Regenwahrscheinlichkeit · mm: erwartete Menge</span></div>'
     + '<div class="scroll"><div class="grid">' + cells + "</div></div>";
   box.hidden = false;
 }
