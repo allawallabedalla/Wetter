@@ -335,6 +335,56 @@
   .key i.clim { background-image: var(--hatch-fine); }
   .key i.span { border: none; border-top: 1.5px solid var(--ink); height: 1px; margin-bottom: 5px; }
 
+  /* ── Wochenstreifen ──────────────────────────────────────── */
+
+  /* Die nächste Woche als sieben große Karten vor dem Kalender: der
+     Monatsraster beantwortet „wie wird der Herbst“, aber nicht schnell
+     genug „wie wird die Woche“. Hier stehen nur echte Vorhersagetage. */
+  .week7 { border: 2px solid var(--line); margin-bottom: 30px; }
+  .week7 .cap {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
+    padding: 11px 14px; border-bottom: 1.5px solid var(--line);
+  }
+  .week7 .cap .t { font-size: .78rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+  .week7 .cap .s { font-size: .68rem; color: var(--mute); }
+  .week7 .scroll { overflow-x: auto; }
+  .week7 .grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 1px; background: var(--rule); min-width: 480px;
+  }
+  .week7 .wd {
+    position: relative; background: var(--paper);
+    display: flex; flex-direction: column; align-items: center;
+    padding: 12px 6px 16px; text-align: center;
+  }
+  .week7 .wd.today { outline: 2px solid var(--ink); outline-offset: -2px; }
+  .week7 .dw {
+    font-size: .62rem; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+  .week7 .wd.today .dw { background: var(--ink); color: var(--paper); padding: 1px 6px; }
+  .week7 .dt { font-size: .66rem; color: var(--mute); margin-top: 3px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .week7 .tx {
+    font-size: 1.55rem; font-weight: 800; letter-spacing: -.04em;
+    line-height: 1.1; margin-top: 8px; font-variant-numeric: tabular-nums;
+  }
+  .week7 .tn { font-size: .76rem; color: var(--mute); margin-top: 1px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .week7 .rp {
+    font-size: .68rem; font-weight: 700; margin-top: 8px;
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .week7 .rp.dry { color: var(--mute); font-weight: 600; }
+  .week7 .wd .rain {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 6px;
+    border-top: 1px solid var(--rule);
+  }
+  .week7 .wd .rain b { position: absolute; left: 0; bottom: 0; top: 0; display: block; background: var(--ink); }
+  .week7 .wd .wet { position: absolute; top: 6px; right: 7px; width: 6px; height: 6px; background: var(--ink); }
+  @media (max-width: 620px) {
+    .week7 .tx { font-size: 1.25rem; }
+    .week7 .cap .s { display: none; }   /* die Legende darunter erklärt dasselbe */
+  }
+
   /* ── Tageskalender ───────────────────────────────────────── */
 
   .cal-controls {
@@ -724,6 +774,10 @@
         Ab Tag 17 steht dort <b>kein blanker Mittelwert</b>, sondern die <b>beste Schätzung</b>:
         der Klimawert des Kalendertags, verschoben um die aktuellen Tendenzen.
       </p>
+
+      <!-- Die nächste Woche vorweg: das Monatsraster ist gut für den Überblick,
+           aber zu kleinteilig für die Frage „wie wird die Woche?“. -->
+      <div class="week7" id="week7" hidden></div>
 
       <div class="cal-controls">
         <button class="chip" id="calDays" aria-pressed="true" type="button">Tag für Tag</button>
@@ -1871,12 +1925,13 @@ function buildDaySeries(doyData, forecast, months, guess) {
       isToday: d.getTime() === today.getTime(),
       clim,
       source: fc ? "fc" : "clim",
-      tmax: null, rainProb: null, prec: null, wet: false,
+      tmax: null, tmin: null, rainProb: null, prec: null, wet: false,
       climTmax: clim ? clim.tmax : null, adj: null,
     };
 
     if (fc && fc.tmax !== null && fc.tmax !== undefined) {
       rec.tmax = fc.tmax;
+      rec.tmin = (fc.tmin === null || fc.tmin === undefined) ? null : fc.tmin;
       rec.prec = fc.prec;
       rec.rainProb = (fc.prob !== null && fc.prob !== undefined)
         ? fc.prob / 100
@@ -2226,6 +2281,56 @@ function renderStanceProof(retro) {
     + fmtNum(h.maeM) + " Grad daneben</b>. An <b>" + better + " von 100 Tagen</b> lag "
     + "sie näher dran als der reine Durchschnitt aus 75 Jahren. Wäre es umgekehrt "
     + "ausgefallen, stünde das genauso hier.";
+}
+
+/**
+ * Die nächsten sieben Tage als eigener Streifen über dem Kalender.
+ *
+ * Der Monatsraster zeigt jeden Tag gleich groß und gleich klein — für die
+ * Frage „wie wird die Woche?“ muss man ihn erst absuchen. Hier stehen
+ * dieselben sieben Tage noch einmal groß: Wochentag, Höchst- und Tiefstwert,
+ * Regenwahrscheinlichkeit. Nur echte Vorhersagetage; reicht die Vorhersage
+ * nicht (API-Ausfall), verschwindet der Streifen, statt Statistik als
+ * Wochenblick auszugeben.
+ */
+function renderWeek7(days) {
+  const box = $("week7");
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const week = days.filter((d) => !d.past && d.date >= today && d.source === "fc"
+                                  && d.tmax !== null).slice(0, 7);
+  if (week.length < 5) { box.hidden = true; return; }
+
+  let cells = "";
+  for (const d of week) {
+    const inDays = Math.round((d.date - today) / 86400000);
+    const dw = inDays === 0 ? "Heute" : inDays === 1 ? "Morgen" : DOW[dowMon(d.date)];
+    const prob = (d.rainProb === null || Number.isNaN(d.rainProb)) ? null : d.rainProb;
+
+    const rows = [["Höchsttemperatur", fmtNum(d.tmax) + " °C"]];
+    if (d.tmin !== null) rows.push(["Tiefsttemperatur", fmtNum(d.tmin) + " °C"]);
+    if (prob !== null) rows.push(["Regenwahrscheinlichkeit", Math.round(prob * 100) + " %"]);
+    if (d.prec !== null) rows.push(["Niederschlag", fmtNum(d.prec) + " mm"]);
+    const tip = tipHTML(tipDate(d.date), "Vorhersage", rows,
+      { note: "Echte Wettervorhersage — Tag " + (d.lead + 1) + " von 16." });
+
+    cells +=
+      '<div class="wd' + (d.isToday ? " today" : "") + '"' + tipAttr(tip) + ">"
+      + '<span class="dw">' + dw + "</span>"
+      + '<span class="dt">' + d.date.getDate() + ". " + MON[d.date.getMonth()] + "</span>"
+      + '<span class="tx">' + Math.round(d.tmax) + "°</span>"
+      + '<span class="tn">' + (d.tmin === null ? "—" : "nachts " + Math.round(d.tmin) + "°") + "</span>"
+      + '<span class="rp' + (prob !== null && prob < 0.15 ? " dry" : "") + '">'
+        + (prob === null ? "—" : Math.round(prob * 100) + " % Regen") + "</span>"
+      + (d.wet ? '<span class="wet"></span>' : "")
+      + '<span class="rain"><b style="width:' + ((prob || 0) * 100).toFixed(0) + '%"></b></span>'
+      + "</div>";
+  }
+
+  box.innerHTML =
+    '<div class="cap"><span class="t">Die nächste Woche</span>'
+    + '<span class="s">echte Vorhersage · Balken unten: Regenwahrscheinlichkeit</span></div>'
+    + '<div class="scroll"><div class="grid">' + cells + "</div></div>";
+  box.hidden = false;
 }
 
 function renderCalendar(days, months) {
@@ -2998,6 +3103,7 @@ async function run(place) {
     renderAnswer(STATE.days, retro, !!fc, place);
     renderStanceProof(retro);
     renderGuessPanel(recent, analogOff, seasonalMap, STATE.days);
+    renderWeek7(STATE.days);
     setCalView(STATE.calView);
     renderRetro(retro);
     renderNextRain(STATE.days, !!fc);
